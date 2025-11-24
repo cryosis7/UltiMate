@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+  <string id="AppName">Ulti-Mate</string>
+  <string id="TotalPoints">Points</string>
+  <string id="Gender">Gender</string>
+  <string id="TotalTime">Total Time</string>
+  <string id="PointTime">Point Time</string>
+</resources>
+
+
