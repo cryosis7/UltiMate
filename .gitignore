@@ -1,0 +1,29 @@
+# Garmin Connect IQ Build Artifacts
+bin/
+gen/
+mir/
+internal-mir/
+*.prg
+*.prg.debug.xml
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS Files
+Thumbs.db
+desktop.ini
+
+# Temporary Files
+*.tmp
+*.log
+*.bak
+*.cache
+
+# Monkey C Specific
+*.monkeyc
+

@@ -1,0 +1,46 @@
+---
+description: Coding standards and best practices for Monkey C development in this project.
+globs: *.mc
+---
+# Monkey C Development Practices
+
+## Code Style
+
+### Naming Conventions
+- **Classes**: PascalCase (e.g., `UltiMateApp`).
+- **Methods**: camelCase (e.g., `getInitialView`).
+- **Private Variables**: camelCase with a leading underscore (e.g., `_gameStartTime`, `_updateTimer`).
+- **Local Variables**: camelCase (e.g., `currentTime`).
+- Use self-documenting names over long comments.
+
+### Type Safety
+- Use type annotations where possible, especially for function parameters and return types.
+    - Example: `function onUpdate(dc as Dc) as Void`
+- Explicitly type local variables if inference is ambiguous.
+
+## API Compatibility
+- **Target SDK**: The project targets a minimum SDK of **1.4.0**.
+- **Constraint**: Do not use APIs, modules, or methods introduced in newer SDK versions (e.g., `Toybox.WatchUi.Menu2`, modern Complications, or newer Graphics features) without checking `minSdkVersion` compatibility.
+- **Documentation**: Verify function availability in the Connect IQ API documentation for SDK 1.4.0.
+
+## UI & Performance
+- **Screen Updates**: 
+    - Use `WatchUi.requestUpdate()` to schedule a redraw.
+    - Avoid heavy computation in `onUpdate()`.
+    - The `onUpdate()` method should clear the screen (`dc.clear()`) before drawing.
+- **Timers**:
+    - Use `Toybox.Timer.Timer` for periodic updates (e.g., updating the clock every second).
+    - Ensure timers are stopped in `onHide()` or `onStop()`.
+
+## Logic Patterns
+- **Time Tracking**: Use `Toybox.System.getTimer()` for relative time measurement (milliseconds).
+- **Input Handling**: Handle inputs in the `Delegate`. Return `true` if the event was consumed, `false` otherwise.
+
+## Common Imports
+```monkeyc
+using Toybox.Application;
+using Toybox.System;
+using Toybox.WatchUi;
+using Toybox.Graphics;
+using Toybox.Timer;
+```

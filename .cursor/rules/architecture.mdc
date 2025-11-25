@@ -1,0 +1,40 @@
+---
+description: Architectural structure of the Ulti-Mate application.
+globs: source/*.mc
+---
+# Architecture & File Structure
+
+The application follows the standard Connect IQ App-View-Delegate pattern.
+
+## Components
+
+### 1. Application (`UltiMateApp.mc`)
+- Extends `Toybox.Application.AppBase`.
+- Manages the application lifecycle (`onStart`, `onStop`).
+- `getInitialView()` returns the main `UltiMateView` and its associated `UltiMateDelegate`.
+
+### 2. View (`UltiMateView.mc`)
+- Extends `Toybox.WatchUi.View`.
+- **Responsibilities**:
+    - Rendering the UI in `onUpdate(dc)`.
+    - Managing the update timer (`_updateTimer`) which triggers screen refreshes every second.
+    - Holding the game state:
+        - `_gameStartTime`: System timer when the app initialized.
+        - `_pointStartTime`: System timer when the current point started.
+        - `_pointsCompleted`: Number of points finished.
+- **Logic**:
+    - Calculates "Gender" status based on `_pointsCompleted` using modulo arithmetic for the ABBA pattern.
+    - Formats time strings (MM:SS).
+
+### 3. Delegate (`UltiMateDelegate.mc`)
+- Extends `Toybox.WatchUi.InputDelegate`.
+- **Responsibilities**:
+    - Handles user input.
+    - Intercepts `KEY_LAP` and `KEY_ENTER` events.
+- **Interaction**:
+    - Calls `_view.incrementPoint()` to update the score and reset the point timer.
+    - Calls `WatchUi.requestUpdate()` to immediately reflect changes.
+
+## Resource Management
+- `resources/strings.xml`: Contains string definitions (e.g., AppName).
+- `manifest.xml`: Defines app permissions, version, and supported products.

@@ -1,23 +1,3 @@
-# Ulti-Mate Monkey Jungle File
-
-# Base directory for source files
-base.sourcePath=source
-
-# Base directory for resource files
-base.resourcePath=resources
-
-# Base directory for output files
-base.outputPath=bin
-
-# Application manifest
-manifest=manifest.xml
-
-# Source files
-source.0=$(base.sourcePath)/UltiMateApp.mc
-source.1=$(base.sourcePath)/UltiMateView.mc
-source.2=$(base.sourcePath)/UltiMateDelegate.mc
-
-# Resource files
-resource.0=$(base.resourcePath)/strings.xml
-
-
+project.manifest = manifest.xml
+base.sourcePath = source
+base.resourcePath = resources

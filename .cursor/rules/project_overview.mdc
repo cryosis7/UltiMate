@@ -1,0 +1,23 @@
+---
+description: Overview of the Ulti-Mate project, its purpose, and key features.
+globs: *
+---
+# Ulti-Mate Project Overview
+
+## Purpose
+Ulti-Mate is a Garmin Connect IQ Watch Application designed to assist Ultimate Frisbee players. It tracks game timing, scoring, and provides gender ratio reminders based on the standard ABBA pattern.
+
+## Key Features
+- **Game Timer**: Tracks total elapsed time since the start of the game.
+- **Point Timer**: Tracks duration of the current point.
+- **Score Tracking**: Counts completed points.
+- **Gender Ratio Indicator**: Displays "A" or "B" to indicate the gender ratio for the current point, following the ABBA pattern (A, B, B, A, A, B, B...).
+
+## Target Platform
+- **SDK Version**: **Minimum SDK 1.4.0**. This is an older framework level; avoid modern Connect IQ APIs introduced in later versions (e.g., System 3 or System 4 features) unless strictly verified.
+- **Devices**: Supports a wide range of Garmin devices including Vivoactive, Fenix, Forerunner, Epix, and Edge series. See `manifest.xml` for the full list.
+
+## Core Files
+- `source/UltiMateApp.mc`: Application entry point.
+- `source/UltiMateView.mc`: Main display logic and game state calculation.
+- `source/UltiMateDelegate.mc`: Input handling (button presses).
