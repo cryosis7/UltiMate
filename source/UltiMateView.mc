@@ -3,6 +3,7 @@ using Toybox.Graphics;
 using Toybox.System;
 using Toybox.Timer;
 using Toybox.WatchUi;
+using Toybox.ActivityRecording;
 
 /**
  * Main view for the Ulti-Mate application.
@@ -18,19 +19,16 @@ using Toybox.WatchUi;
  */
 class UltiMateView extends WatchUi.View {
 
-    private var _gameStartTime;
-    private var _pointStartTime;
-    private var _pointsCompleted;
+    private var _gameModel;
     private var _updateTimer;
-    private var _currentGender;
-    private var _showExitPrompt;
-    private var _exitPromptStartTime;
+    private var _session;
     
     // Layout variables
     private var _centerX;
     private var _lineHeight;
     private var _labelOffset;
-    private var _yPointsLabel;
+    private var _labelFontSize;
+    private var _valueFontSize;
     private var _yPointsValue;
     private var _yGenderLabel;
     private var _yGenderValue;
@@ -41,13 +39,20 @@ class UltiMateView extends WatchUi.View {
     
     function initialize() {
         View.initialize();
-        _gameStartTime = System.getTimer();
-        _pointStartTime = _gameStartTime;
-        _pointsCompleted = 0;
+        _gameModel = new GameModel();
         _updateTimer = new Timer.Timer();
-        _currentGender = getGenderForPoint(_pointsCompleted);
-        _showExitPrompt = false;
-        _exitPromptStartTime = 0;
+        _session = null;
+        
+        // Start ActivityRecording session
+        if (ActivityRecording has :createSession) {
+            _session = ActivityRecording.createSession({
+                :name => "Ultimate Frisbee",
+                :sport => ActivityRecording.SPORT_GENERIC
+            });
+            if (_session != null && _session has :start) {
+                _session.start();
+            }
+        }
     }
 
     // Calculate layout positions based on screen dimensions
@@ -55,23 +60,23 @@ class UltiMateView extends WatchUi.View {
         var width = dc.getWidth();
         var height = dc.getHeight();
         
-        _centerX = width / 2;
-        _lineHeight = height / 5;
-        _labelOffset = 15;
+        _labelFontSize = Graphics.FONT_SMALL;
+        _valueFontSize = Graphics.FONT_MEDIUM;
         
-        var startY = height * 0.08;
+        _centerX = width / 2;
+        _lineHeight = height / 4;
+        _labelOffset = FontConstants.FONT_SMALL_HEIGHT;
         
         // Calculate Y positions for each section
-        _yPointsLabel = startY;
-        _yPointsValue = _yPointsLabel + _labelOffset;
+        _yPointsValue = _lineHeight / 2;
         
-        _yGenderLabel = _yPointsValue + _lineHeight - _labelOffset;
+        _yGenderLabel = _lineHeight;
         _yGenderValue = _yGenderLabel + _labelOffset;
         
-        _yTotalTimeLabel = _yGenderValue + _lineHeight - _labelOffset;
+        _yTotalTimeLabel = _lineHeight * 2;
         _yTotalTimeValue = _yTotalTimeLabel + _labelOffset;
         
-        _yPointTimeLabel = _yTotalTimeValue + _lineHeight - _labelOffset;
+        _yPointTimeLabel = _lineHeight * 3;
         _yPointTimeValue = _yPointTimeLabel + _labelOffset;
     }
 
@@ -79,7 +84,9 @@ class UltiMateView extends WatchUi.View {
     // the state of this View and prepare it to be shown. This includes
     // loading resources into memory.
     function onShow() as Void {
-        _updateTimer.start(method(:onTimer), 1000, true);
+        if (!_gameModel.isPaused()) {
+            _updateTimer.start(method(:onTimer), 1000, true);
+        }
     }
 
     // Update the view
@@ -88,50 +95,47 @@ class UltiMateView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
         dc.clear();
         
-        var currentTime = System.getTimer();
-        var totalElapsed = currentTime - _gameStartTime;
-        var pointElapsed = currentTime - _pointStartTime;
+        // Get formatted time strings from model
+        var totalTimeStr = _gameModel.getFormattedTotalTime(null);
+        var pointTimeStr = _gameModel.getFormattedPointTime(null);
         
-        // Check if exit prompt should be hidden (after 2 seconds)
-        if (_showExitPrompt && _exitPromptStartTime > 0) {
-            var promptElapsed = currentTime - _exitPromptStartTime;
-            if (promptElapsed > 2000) {
-                _showExitPrompt = false;
-                _exitPromptStartTime = 0;
-            }
-        }
+        // Draw split score background
+        // Left half: Dark (Black background)
+        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
+        dc.fillRectangle(0, 0, _centerX, _lineHeight);
         
-        // Format time strings
-        var totalTimeStr = formatTime(totalElapsed);
-        var pointTimeStr = formatTime(pointElapsed);
+        // Right half: Light (White background)
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_WHITE);
+        dc.fillRectangle(_centerX, 0, _centerX, _lineHeight);
         
-        // Set text color
+        // Draw Dark score (left, white text on black)
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_centerX / 2, _yPointsValue, _valueFontSize, _gameModel.getScoreDark().toString(), Graphics.TEXT_JUSTIFY_CENTER);
         
-        var fontSize = Graphics.FONT_SMALL;
-        
-        // Total Points
-        dc.drawText(_centerX, _yPointsLabel, Graphics.FONT_TINY, "Points", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(_centerX, _yPointsValue, fontSize, _pointsCompleted.toString(), Graphics.TEXT_JUSTIFY_CENTER);
+        // Draw Light score (right, black text on white)
+        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_centerX + (_centerX / 2), _yPointsValue, _valueFontSize, _gameModel.getScoreLight().toString(), Graphics.TEXT_JUSTIFY_CENTER);
         
         // Gender
-        dc.drawText(_centerX, _yGenderLabel, Graphics.FONT_TINY, "Gender", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(_centerX, _yGenderValue, fontSize, _currentGender, Graphics.TEXT_JUSTIFY_CENTER);
-        
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_centerX, _yGenderLabel, _labelFontSize, "Gender", Graphics.TEXT_JUSTIFY_CENTER);
+        var currentGender = _gameModel.getCurrentGender();
+        var nextGender = _gameModel.getNextGender();
+        // Draw current gender in white (centered, slightly left)
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_centerX, _yGenderValue, _valueFontSize, currentGender, Graphics.TEXT_JUSTIFY_CENTER);
+        // Draw next gender in dark grey - centered, slightly right
+        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_centerX + 16, _yGenderValue, _valueFontSize, nextGender, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+
         // Total Time
-        dc.drawText(_centerX, _yTotalTimeLabel, Graphics.FONT_TINY, "Total Time", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(_centerX, _yTotalTimeValue, fontSize, totalTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _yTotalTimeLabel, _labelFontSize, "Total Time", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _yTotalTimeValue, _valueFontSize, totalTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
         
         // Point Time
-        dc.drawText(_centerX, _yPointTimeLabel, Graphics.FONT_TINY, "Point Time", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(_centerX, _yPointTimeValue, fontSize, pointTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
-        
-        // Show exit prompt if needed
-        if (_showExitPrompt) {
-            var promptY = dc.getHeight() - 30;
-            dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(_centerX, promptY, Graphics.FONT_TINY, "Press Back again to exit", Graphics.TEXT_JUSTIFY_CENTER);
-        }
+        dc.drawText(_centerX, _yPointTimeLabel, _labelFontSize, "Point Time", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _yPointTimeValue, _valueFontSize, pointTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     // Called when this View is removed from the screen. Save the
@@ -147,42 +151,72 @@ class UltiMateView extends WatchUi.View {
     }
     
     // Public methods for delegate to call
-    function incrementPoint() as Void {
-        _pointsCompleted += 1;
-        _pointStartTime = System.getTimer();
-        _currentGender = getGenderForPoint(_pointsCompleted);
-    }
-    
-    function getPointsCompleted() {
-        return _pointsCompleted;
-    }
-    
-    // Show exit prompt message
-    function showExitPrompt() as Void {
-        _showExitPrompt = true;
-        _exitPromptStartTime = System.getTimer();
+    function incrementDark() as Void {
+        _gameModel.incrementDark(null);
         WatchUi.requestUpdate();
     }
     
-    // Helper method: Calculate gender ratio based on ABBA pattern
-    // Points 0,3,4,7,8,11,12... = A (when points_completed % 4 == 0 || points_completed % 4 == 3)
-    // Points 1,2,5,6,9,10... = B (when points_completed % 4 == 1 || points_completed % 4 == 2)
-    private function getGenderForPoint(points) {
-        if (points == 0) {
-            return "A";
-        }
-        var mod = points % 4;
-        if (mod == 1 || mod == 2) {
-            return "B";
-        }
-        return "A";
+    function incrementLight() as Void {
+        _gameModel.incrementLight(null);
+        WatchUi.requestUpdate();
     }
     
-    // Helper method: Format milliseconds as MM:SS string
-    private function formatTime(milliseconds) {
-        var minutes = milliseconds / 60000;
-        var seconds = (milliseconds / 1000) % 60;
-        return minutes.format("%d") + ":" + seconds.format("%02d");
+    function pause() as Void {
+        _gameModel.pause(null);
+        _updateTimer.stop();
+    }
+    
+    function resume() as Void {
+        _gameModel.resume(null);
+        WatchUi.requestUpdate();
+    }
+    
+    function saveSession() as Void {
+        if (_session != null && _session has :stop) {
+            _session.stop();
+        }
+        if (_session != null && _session has :save) {
+            _session.save();
+        }
+        _session = null;
+    }
+    
+    function discardSession() as Void {
+        if (_session != null && _session has :stop) {
+            _session.stop();
+        }
+        if (_session != null && _session has :discard) {
+            _session.discard();
+        }
+        _session = null;
+    }
+    
+    function isPaused() {
+        return _gameModel.isPaused();
+    }
+    
+    function getGameModel() {
+        return _gameModel;
+    }
+
+    /**
+     * Undo the last score that was added.
+     * @return true if a score was undone, false if history is empty.
+     */
+    function undoLastScore() {
+        var undone = _gameModel.undoLastScore(null);
+        if (undone) {
+            WatchUi.requestUpdate();
+        }
+        return undone;
+    }
+
+    /**
+     * Show the confirm exit view when user presses back with no scores.
+     */
+    function showConfirmExit() as Void {
+        var confirmExitView = new ConfirmExitView(self);
+        WatchUi.pushView(confirmExitView, new ConfirmExitDelegate(confirmExitView), WatchUi.SLIDE_UP);
     }
 
 }

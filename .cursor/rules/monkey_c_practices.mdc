@@ -7,11 +7,24 @@ globs: *.mc
 ## Code Style
 
 ### Naming Conventions
-- **Classes**: PascalCase (e.g., `UltiMateApp`).
-- **Methods**: camelCase (e.g., `getInitialView`).
+Following [Garmin's official coding conventions](https://developer.garmin.com/connect-iq/monkey-c/coding-conventions/):
+
+- **Classes**: PascalCase (e.g., `UltiMateApp`, `GameModel`).
+- **Methods**: camelCase (e.g., `getInitialView`, `incrementDark`).
 - **Private Variables**: camelCase with a leading underscore (e.g., `_gameStartTime`, `_updateTimer`).
-- **Local Variables**: camelCase (e.g., `currentTime`).
-- Use self-documenting names over long comments.
+- **Public Variables**: camelCase (e.g., `currentTime`, `darkScore`).
+- **Constants**: UPPER_CASE_WITH_UNDERSCORES (e.g., `MAX_SCORE`, `DEFAULT_TIMEOUT`).
+- **Module Names**: PascalCase matching the filename.
+
+### Indentation and Formatting
+- Use **4 spaces** for indentation (not tabs).
+- Maintain consistent indentation throughout all code files.
+- Place opening braces `{` on the same line as the declaration.
+- Use blank lines to separate logical sections of code.
+
+### Comments
+- Use self-documenting names over comments where possible.
+- Do not use comments.
 
 ### Type Safety
 - Use type annotations where possible, especially for function parameters and return types.
@@ -35,6 +48,14 @@ globs: *.mc
 ## Logic Patterns
 - **Time Tracking**: Use `Toybox.System.getTimer()` for relative time measurement (milliseconds).
 - **Input Handling**: Handle inputs in the `Delegate`. Return `true` if the event was consumed, `false` otherwise.
+- **Resource Management**: Always clean up resources (timers, sessions) in lifecycle methods (`onHide`, `onStop`).
+- **Memory Management**: Be mindful of memory constraints on watch devices. Avoid creating unnecessary objects in frequently called methods.
+
+## Code Organization
+- **One Class Per File**: Each file should contain only one class or module.
+- **File Naming**: Match the filename to the primary class name (e.g., `GameModel.mc` contains `GameModel` class).
+- **Module Structure**: Use `using` statements at the top of files to import required modules.
+- **Separation of Concerns**: Keep UI logic in Views, input handling in Delegates, and business logic in Model classes.
 
 ## Common Imports
 ```monkeyc
@@ -43,4 +64,5 @@ using Toybox.System;
 using Toybox.WatchUi;
 using Toybox.Graphics;
 using Toybox.Timer;
+using Toybox.ActivityRecording;
 ```

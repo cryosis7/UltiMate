@@ -4,7 +4,7 @@ globs: source/*.mc
 ---
 # Architecture & File Structure
 
-The application follows the standard Connect IQ App-View-Delegate pattern.
+The application follows the standard Connect IQ App-View-Delegate pattern, with a dedicated Model for state management.
 
 ## Components
 
@@ -13,27 +13,53 @@ The application follows the standard Connect IQ App-View-Delegate pattern.
 - Manages the application lifecycle (`onStart`, `onStop`).
 - `getInitialView()` returns the main `UltiMateView` and its associated `UltiMateDelegate`.
 
-### 2. View (`UltiMateView.mc`)
+### 2. Model (`GameModel.mc`)
+- Manages core game state and business logic, separated from UI concerns.
+- **Responsibilities**:
+    - Track scores (`dark`, `light`).
+    - Track timing (game start, point start, pause state).
+    - Calculate derived state (current gender ratio, formatted time strings).
+    - Handle game actions (`incrementDark`, `incrementLight`, `pause`, `resume`).
+
+### 3. View (`UltiMateView.mc`)
 - Extends `Toybox.WatchUi.View`.
 - **Responsibilities**:
     - Rendering the UI in `onUpdate(dc)`.
     - Managing the update timer (`_updateTimer`) which triggers screen refreshes every second.
-    - Holding the game state:
-        - `_gameStartTime`: System timer when the app initialized.
-        - `_pointStartTime`: System timer when the current point started.
-        - `_pointsCompleted`: Number of points finished.
-- **Logic**:
-    - Calculates "Gender" status based on `_pointsCompleted` using modulo arithmetic for the ABBA pattern.
-    - Formats time strings (MM:SS).
-
-### 3. Delegate (`UltiMateDelegate.mc`)
-- Extends `Toybox.WatchUi.InputDelegate`.
-- **Responsibilities**:
-    - Handles user input.
-    - Intercepts `KEY_LAP` and `KEY_ENTER` events.
+    - Delegating game logic to `GameModel` instance.
+    - Manages `ActivityRecording` session (start, stop, save, discard).
 - **Interaction**:
-    - Calls `_view.incrementPoint()` to update the score and reset the point timer.
-    - Calls `WatchUi.requestUpdate()` to immediately reflect changes.
+    - Uses `_gameModel` for all game state and logic.
+    - Displays scores, times, and gender ratio from the model.
+
+### 4. Delegate (`UltiMateDelegate.mc`)
+- Extends `Toybox.WatchUi.BehaviorDelegate`.
+- **Responsibilities**:
+    - Handles user input during the active game (Select, Previous Page, Next Page).
+    - Triggers the pause state.
+- **Interaction**:
+    - Calls `_view.incrementDark()` or `_view.incrementLight()` to update scores.
+    - Calls `_view.pause()` to pause the game.
+    - Pushes `PauseMenuView` and `PauseMenuDelegate` when "Select" is pressed.
+
+### 5. Pause Menu View (`PauseMenuView.mc`)
+- Extends `Toybox.WatchUi.View`.
+- **Responsibilities**:
+    - Displays the "Paused" state, including a pause timer and menu options (Resume, Save, Discard).
+    - Manages its own update timer to refresh the pause duration.
+    - Handles visual selection state of menu items.
+- **Interaction**:
+    - Uses `_gameModel` to get formatted pause duration.
+    - Calls `_view.resume()`, `_view.saveSession()`, or `_view.discardSession()` based on selection.
+
+### 6. Pause Menu Delegate (`PauseMenuDelegate.mc`)
+- Extends `Toybox.WatchUi.BehaviorDelegate`.
+- **Responsibilities**:
+    - Handles user input while in the pause menu.
+    - Maps physical buttons (Next Page, Previous Page) to menu navigation.
+    - Maps "Select" button to executing the selected menu item.
+- **Interaction**:
+    - Calls `_view.selectNext()`, `_view.selectPrevious()`, or `_view.selectItem()` on the `PauseMenuView`.
 
 ## Resource Management
 - `resources/strings.xml`: Contains string definitions (e.g., AppName).

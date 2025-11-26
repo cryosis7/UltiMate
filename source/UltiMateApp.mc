@@ -6,6 +6,7 @@ class UltiMateApp extends Application.AppBase {
 
     function initialize() {
         AppBase.initialize();
+        FontConstants.initialize();
     }
 
     // onStart() is called on application start up
