@@ -35,8 +35,7 @@ class GameModel {
         _scoreLight = 0;
         _isPaused = false;
         _pauseStartTime = null;
-        _currentGender = getGenderForPoint();
-        _nextGender = getGenderForNextPoint();
+        setGender();
         _historyPoints = [];
         _historyPointStartTimes = [];
     }
@@ -76,8 +75,7 @@ class GameModel {
      */
     private function newPoint(currentTime) as Void {
         _pointStartTime = currentTime;
-        _currentGender = getGenderForPoint();
-        _nextGender = getGenderForNextPoint();
+        setGender();
     }
 
     /**
@@ -238,46 +236,33 @@ class GameModel {
         
         // Restore the previous point start time
         _pointStartTime = prevStart;
-        _currentGender = getGenderForPoint();
-        _nextGender = getGenderForNextPoint();
+        setGender();
         return true;
     }
 
     /**
-     * Calculate gender ratio based on ABBA pattern.
+     * Set both current and next gender ratios based on ABBA pattern.
      * Pattern: A, B, B, A, A, B, B, A...
      * Points 0, 3, 4, 7, 8... = A
      * Points 1, 2, 5, 6, 9, 10... = B
      */
-    private function getGenderForPoint() {
+    private function setGender() as Void {
         var points = _scoreLight + _scoreDark;
-        if (points == 0) {
-            return "A";
-        }
+        
         var mod = points % 4;
         if (mod == 1 || mod == 2) {
-            return "B";
+            _currentGender = "B";
+        } else {
+            _currentGender = "A";
         }
-        return "A";
-    }
-
-    /**
-     * Calculate gender ratio for the next point based on ABBA pattern.
-     * Pattern: A, B, B, A, A, B, B, A...
-     * Points 0, 3, 4, 7, 8... = A
-     * Points 1, 2, 5, 6, 9, 10... = B
-     */
-    private function getGenderForNextPoint() {
-        var points = _scoreLight + _scoreDark;
+        
         var nextPoint = points + 1;
-        if (nextPoint == 0) {
-            return "A";
+        var nextMod = nextPoint % 4;
+        if (nextMod == 1 || nextMod == 2) {
+            _nextGender = "B";
+        } else {
+            _nextGender = "A";
         }
-        var mod = nextPoint % 4;
-        if (mod == 1 || mod == 2) {
-            return "B";
-        }
-        return "A";
     }
 
 }

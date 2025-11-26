@@ -57,6 +57,34 @@ monkeydo bin/UltiMate.prg fr235
 
 **Note:** The device ID used in `monkeydo` must match the one used during compilation.
 
+### 4. Deploy to Physical Watch
+
+To run the application on your actual Garmin watch, you need to "side-load" the compiled application file.
+
+1. **Connect your watch** to your computer via USB. It should appear as a removable drive (mass storage or MTP).
+
+2. **Build the application** for your specific watch model:
+   ```bash
+   monkeyc -o bin/UltiMate.prg -f monkey.jungle -d <your_device_id> -y developer_key.der
+   ```
+   Replace `<your_device_id>` with your watch model (e.g., `fr235`, `fenix7`, `vivoactive4`).
+
+3. **Copy the application file**:
+   - Locate the `bin/UltiMate.prg` file on your computer.
+   - Open your watch's drive.
+   - Navigate to the `GARMIN/APPS` folder.
+   - Copy `UltiMate.prg` into the `GARMIN/APPS` folder.
+
+4. **Disconnect and Run**:
+   - Safely eject/disconnect your watch.
+   - The watch may display "Updating" briefly.
+   - Go to your Activities/Apps list on the watch, and you should see "Ulti-Mate" (or the name defined in strings).
+
+**Troubleshooting:**
+- If the app doesn't appear, check that the `device_id` used in the build command matches your physical device exactly.
+- Ensure you copied the file to `GARMIN/APPS` and not another folder.
+- Some devices require a restart after side-loading.
+
 ## Project Structure
 
 - `source/`: Contains the Monkey C source code (`.mc` files).
