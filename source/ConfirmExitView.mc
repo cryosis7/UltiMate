@@ -74,11 +74,10 @@ class ConfirmExitView extends WatchUi.View {
         if (_selectedIndex == 0) {
             // Yes - discard and exit
             _viewRef.discardSession();
-            WatchUi.popView(WatchUi.SLIDE_DOWN);
-            WatchUi.popView(WatchUi.SLIDE_DOWN); // Exit app
+            System.exit();
         } else {
             // No - cancel and go back
-            WatchUi.popView(WatchUi.SLIDE_DOWN);
+            WatchUi.popView(WatchUi.SLIDE_RIGHT);
         }
     }
 

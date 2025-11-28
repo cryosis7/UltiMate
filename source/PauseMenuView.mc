@@ -111,19 +111,17 @@ class PauseMenuView extends WatchUi.View {
         } else if (_selectedIndex == 1) {
             // Save
             _view.saveSession();
-            WatchUi.popView(WatchUi.SLIDE_DOWN);
-            WatchUi.popView(WatchUi.SLIDE_DOWN); // Exit app after save
+            System.exit();
         } else if (_selectedIndex == 2) {
             // Discard
             _view.discardSession();
-            WatchUi.popView(WatchUi.SLIDE_DOWN);
-            WatchUi.popView(WatchUi.SLIDE_DOWN); // Exit app after discard
+            System.exit();
         }
     }
     
     function resume() {
         _view.resume();
-        WatchUi.popView(WatchUi.SLIDE_DOWN);
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
     }
 
 }

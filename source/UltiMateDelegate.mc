@@ -14,7 +14,7 @@ class UltiMateDelegate extends WatchUi.BehaviorDelegate {
             _view.pause();
         }
         var pauseMenuView = new PauseMenuView(_view, _view.getGameModel());
-        WatchUi.pushView(pauseMenuView, new PauseMenuDelegate(pauseMenuView), WatchUi.SLIDE_UP);
+        WatchUi.pushView(pauseMenuView, new PauseMenuDelegate(pauseMenuView), WatchUi.SLIDE_LEFT);
         return true;
     }
 
