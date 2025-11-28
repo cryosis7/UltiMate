@@ -25,19 +25,23 @@ class UltiMateView extends WatchUi.View {
     
     // Layout variables
     private var _width;
-    private var _centerX;
-    private var _lineHeight;
     private var _labelOffset;
     private var _labelFontSize;
     private var _valueFontSize;
-    private var _xPointsOffset;
-    private var _yPointsValue;
-    private var _yGenderLabel;
-    private var _yGenderValue;
-    private var _yTotalTimeLabel;
-    private var _yTotalTimeValue;
-    private var _yPointTimeLabel;
-    private var _yPointTimeValue;
+    private var _yOneThird;
+    private var _ySection1;
+    private var _ySection2;
+    private var _xCenter;
+    private var _xFirstQuarter;
+    private var _xThirdQuarter;
+    
+    private var _xScoreDarkPos;
+    private var _xScoreLightPos;
+    private var _yScorePos;
+    private var _yCurrentTimePos;
+    private var _yTimerLabelPos;
+    private var _yTimerValuePos;
+    private var _xGenderNextPos;
     
     function initialize() {
         View.initialize();
@@ -60,27 +64,31 @@ class UltiMateView extends WatchUi.View {
     // Calculate layout positions based on screen dimensions
     function onLayout(dc) {
         _labelFontSize = Graphics.FONT_TINY;
+        _labelOffset = FontConstants.FONT_TINY_HEIGHT;
         _valueFontSize = Graphics.FONT_LARGE;
         
-        _width = dc.getWidth();
         var height = dc.getHeight();
+
+        _yOneThird = height / 3;
+        var buffer = _yOneThird * 0.2;
+        _ySection1 = _yOneThird - buffer;
+        _ySection2 = (_yOneThird * 2) + buffer;
         
-        _centerX = _width / 2;
-        _lineHeight = height / 4;
-        _labelOffset = FontConstants.FONT_TINY_HEIGHT;
+        _width = dc.getWidth();
+        _xCenter = _width / 2;
+        _xFirstQuarter = _width / 4;
+        _xThirdQuarter = _width - _xFirstQuarter;
         
-        // Calculate Y positions for each section
-        _xPointsOffset = (_centerX / 2) * 0.1;
-        _yPointsValue = _lineHeight / 2;
+        _xScoreDarkPos = _xCenter * 0.66;
+        _xScoreLightPos = _xCenter * 1.33;
+        _yScorePos = _ySection1 / 2;
         
-        _yGenderLabel = _lineHeight;
-        _yGenderValue = _yGenderLabel + _labelOffset;
+        var middleSectionHeight = _ySection2 - _ySection1;
+        _yCurrentTimePos = _ySection1 + (middleSectionHeight * 0.25);
+        _yTimerLabelPos = _ySection1 + (middleSectionHeight * 0.5);
+        _yTimerValuePos = _ySection1 + (middleSectionHeight * 0.75);
         
-        _yTotalTimeLabel = _lineHeight * 2;
-        _yTotalTimeValue = _yTotalTimeLabel + _labelOffset;
-        
-        _yPointTimeLabel = _lineHeight * 3;
-        _yPointTimeValue = _yPointTimeLabel + _labelOffset;
+        _xGenderNextPos = _xCenter * 1.25;
     }
 
     // Called when this View is brought to the foreground. Restore
@@ -101,47 +109,56 @@ class UltiMateView extends WatchUi.View {
         // Get formatted time strings from model
         var totalTimeStr = _gameModel.getFormattedTotalTime(null);
         var pointTimeStr = _gameModel.getFormattedPointTime(null);
+        var clockTime = System.getClockTime();
+        var currentTimeStr = clockTime.hour.format("%02d") + ":" + clockTime.min.format("%02d");
 
         // Draw split score background
         // Left half: Dark (Black background)
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
-        dc.fillRectangle(0, 0, _centerX, _lineHeight);
+        dc.fillRectangle(0, 0, _xCenter, _ySection1);
         
         // Right half: Light (White background)
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_WHITE);
-        dc.fillRectangle(_centerX, 0, _centerX, _lineHeight);
+        dc.fillRectangle(_xCenter, 0, _xCenter, _ySection1);
 
         // White outline around the score
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawRectangle(0, 0, _width, _lineHeight);
-        
-        // Draw Dark score (left, white text on black)
+        dc.drawRectangle(0, 0, _width, _ySection1);
+
+        // Draw Dark score (left, white text on black) at 66% of the way across it's section
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText((_centerX / 2) + _xPointsOffset, _yPointsValue, Graphics.FONT_NUMBER_MILD, _gameModel.getScoreDark().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(_xScoreDarkPos, _yScorePos, Graphics.FONT_NUMBER_MILD, _gameModel.getScoreDark().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         
-        // Draw Light score (right, black text on white)
+        // Draw Light score (right, black text on white) at 33% of the way across it's section
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX + (_centerX / 2) - _xPointsOffset, _yPointsValue, Graphics.FONT_NUMBER_MILD, _gameModel.getScoreLight().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(_xScoreLightPos, _yScorePos, Graphics.FONT_NUMBER_MILD, _gameModel.getScoreLight().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+
+        // ------------------------------------------------------------
+        // Current Time (Centered)
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_xCenter, _yCurrentTimePos, Graphics.FONT_TINY, currentTimeStr, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        
+        // Total Time (Left half)
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_xFirstQuarter, _yTimerLabelPos, _labelFontSize, "Total", Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(_xFirstQuarter, _yTimerValuePos, Graphics.FONT_NUMBER_MILD, totalTimeStr, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+
+        // Point Time (Right half)
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_xThirdQuarter, _yTimerLabelPos, _labelFontSize, "Point", Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(_xThirdQuarter, _yTimerValuePos, Graphics.FONT_NUMBER_MILD, pointTimeStr, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+
+        // ------------------------------------------------------------
 
         // Gender
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX, _yGenderLabel, _labelFontSize, "Gender", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_xCenter, _ySection2, _labelFontSize, "Gender", Graphics.TEXT_JUSTIFY_CENTER);
         // Draw current gender in white (centered)
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX, _yGenderValue, _valueFontSize, _gameModel.getCurrentGender(), Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_xCenter, _ySection2 + _labelOffset, _valueFontSize, _gameModel.getCurrentGender(), Graphics.TEXT_JUSTIFY_CENTER);
         // Draw next gender in dark grey - centered, slightly right
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX * 1.25, _yGenderValue, _valueFontSize, _gameModel.getNextGender(), Graphics.TEXT_JUSTIFY_CENTER);
-
-        // Total Time
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX, _yTotalTimeLabel, _labelFontSize, "Total Time", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(_centerX, _yTotalTimeValue, Graphics.FONT_NUMBER_MILD, totalTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
-        
-        // Point Time
-        dc.drawText(_centerX, _yPointTimeLabel, _labelFontSize, "Point Time", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(_centerX, _yPointTimeValue, Graphics.FONT_NUMBER_MILD
-        , pointTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_xGenderNextPos, _ySection2 + _labelOffset, _valueFontSize, _gameModel.getNextGender(), Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     // Called when this View is removed from the screen. Save the
