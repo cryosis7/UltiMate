@@ -24,11 +24,13 @@ class UltiMateView extends WatchUi.View {
     private var _session;
     
     // Layout variables
+    private var _width;
     private var _centerX;
     private var _lineHeight;
     private var _labelOffset;
     private var _labelFontSize;
     private var _valueFontSize;
+    private var _xPointsOffset;
     private var _yPointsValue;
     private var _yGenderLabel;
     private var _yGenderValue;
@@ -46,7 +48,7 @@ class UltiMateView extends WatchUi.View {
         // Start ActivityRecording session
         if (ActivityRecording has :createSession) {
             _session = ActivityRecording.createSession({
-                :name => "Ultimate Frisbee",
+                :name => "UltimateFrisbee",
                 :sport => ActivityRecording.SPORT_GENERIC
             });
             if (_session != null && _session has :start) {
@@ -57,17 +59,18 @@ class UltiMateView extends WatchUi.View {
 
     // Calculate layout positions based on screen dimensions
     function onLayout(dc) {
-        var width = dc.getWidth();
+        _labelFontSize = Graphics.FONT_TINY;
+        _valueFontSize = Graphics.FONT_LARGE;
+        
+        _width = dc.getWidth();
         var height = dc.getHeight();
         
-        _labelFontSize = Graphics.FONT_SMALL;
-        _valueFontSize = Graphics.FONT_MEDIUM;
-        
-        _centerX = width / 2;
+        _centerX = _width / 2;
         _lineHeight = height / 4;
-        _labelOffset = FontConstants.FONT_SMALL_HEIGHT;
+        _labelOffset = FontConstants.FONT_TINY_HEIGHT;
         
         // Calculate Y positions for each section
+        _xPointsOffset = (_centerX / 2) * 0.1;
         _yPointsValue = _lineHeight / 2;
         
         _yGenderLabel = _lineHeight;
@@ -98,7 +101,7 @@ class UltiMateView extends WatchUi.View {
         // Get formatted time strings from model
         var totalTimeStr = _gameModel.getFormattedTotalTime(null);
         var pointTimeStr = _gameModel.getFormattedPointTime(null);
-        
+
         // Draw split score background
         // Left half: Dark (Black background)
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
@@ -107,35 +110,38 @@ class UltiMateView extends WatchUi.View {
         // Right half: Light (White background)
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_WHITE);
         dc.fillRectangle(_centerX, 0, _centerX, _lineHeight);
+
+        // White outline around the score
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawRectangle(0, 0, _width, _lineHeight);
         
         // Draw Dark score (left, white text on black)
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX / 2, _yPointsValue, _valueFontSize, _gameModel.getScoreDark().toString(), Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText((_centerX / 2) + _xPointsOffset, _yPointsValue, Graphics.FONT_NUMBER_MILD, _gameModel.getScoreDark().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         
         // Draw Light score (right, black text on white)
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX + (_centerX / 2), _yPointsValue, _valueFontSize, _gameModel.getScoreLight().toString(), Graphics.TEXT_JUSTIFY_CENTER);
-        
+        dc.drawText(_centerX + (_centerX / 2) - _xPointsOffset, _yPointsValue, Graphics.FONT_NUMBER_MILD, _gameModel.getScoreLight().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+
         // Gender
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_centerX, _yGenderLabel, _labelFontSize, "Gender", Graphics.TEXT_JUSTIFY_CENTER);
-        var currentGender = _gameModel.getCurrentGender();
-        var nextGender = _gameModel.getNextGender();
-        // Draw current gender in white (centered, slightly left)
+        // Draw current gender in white (centered)
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX, _yGenderValue, _valueFontSize, currentGender, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _yGenderValue, _valueFontSize, _gameModel.getCurrentGender(), Graphics.TEXT_JUSTIFY_CENTER);
         // Draw next gender in dark grey - centered, slightly right
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX + 16, _yGenderValue, _valueFontSize, nextGender, Graphics.TEXT_JUSTIFY_CENTER);
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_centerX * 1.25, _yGenderValue, _valueFontSize, _gameModel.getNextGender(), Graphics.TEXT_JUSTIFY_CENTER);
 
         // Total Time
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_centerX, _yTotalTimeLabel, _labelFontSize, "Total Time", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(_centerX, _yTotalTimeValue, _valueFontSize, totalTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _yTotalTimeValue, Graphics.FONT_NUMBER_MILD, totalTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
         
         // Point Time
         dc.drawText(_centerX, _yPointTimeLabel, _labelFontSize, "Point Time", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(_centerX, _yPointTimeValue, _valueFontSize, pointTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _yPointTimeValue, Graphics.FONT_NUMBER_MILD
+        , pointTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     // Called when this View is removed from the screen. Save the
@@ -217,6 +223,27 @@ class UltiMateView extends WatchUi.View {
     function showConfirmExit() as Void {
         var confirmExitView = new ConfirmExitView(self);
         WatchUi.pushView(confirmExitView, new ConfirmExitDelegate(confirmExitView), WatchUi.SLIDE_UP);
+    }
+
+    /**
+     * Cleanup resources when the application is exiting.
+     * Called from UltiMateApp.onStop() to ensure proper resource cleanup.
+     */
+    function cleanup() as Void {
+        if (_updateTimer != null) {
+            _updateTimer.stop();
+            _updateTimer = null;
+        }
+        if (_session != null) {
+            if (_session has :stop) {
+                _session.stop();
+            }
+            if (_session has :discard) {
+                _session.discard();
+            }
+            _session = null;
+        }
+        _gameModel = null;
     }
 
 }

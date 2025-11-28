@@ -21,6 +21,8 @@ class PauseMenuView extends WatchUi.View {
     private var _smallFontHeight;
     private var _mediumFontHeight;
     
+    private const MENU_ITEMS = ["Resume", "Save", "Discard"];
+    
     function initialize(view, gameModel) {
         View.initialize();
         _view = view;
@@ -67,8 +69,7 @@ class PauseMenuView extends WatchUi.View {
         dc.drawText(_centerX, _timerY, Graphics.FONT_SMALL, pauseTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
         
         // Draw scrolling menu - show current item large, with prev/next items smaller
-        var menuItems = ["Resume", "Save", "Discard"];
-        var currentItem = menuItems[_selectedIndex];
+        var currentItem = MENU_ITEMS[_selectedIndex];
         var prevIndex = (_selectedIndex - 1 + 3) % 3;
         var nextIndex = (_selectedIndex + 1) % 3;
         
@@ -78,11 +79,11 @@ class PauseMenuView extends WatchUi.View {
         
         // Draw previous item
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX, _menuStartY - _smallFontHeight, Graphics.FONT_SMALL, menuItems[prevIndex], Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _menuStartY - _smallFontHeight, Graphics.FONT_SMALL, MENU_ITEMS[prevIndex], Graphics.TEXT_JUSTIFY_CENTER);
 
         // Draw next item 
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX, _menuStartY + _mediumFontHeight, Graphics.FONT_SMALL, menuItems[nextIndex], Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _menuStartY + _mediumFontHeight, Graphics.FONT_SMALL, MENU_ITEMS[nextIndex], Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     function onTimer() {
