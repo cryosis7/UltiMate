@@ -6,22 +6,27 @@ Ulti-Mate is a Garmin Connect IQ Watch Application designed to assist Ultimate F
 ## Key Features
 - **Game Timer**: Tracks total elapsed time since the start of the game.
 - **Point Timer**: Tracks duration of the current point.
-- **Score Tracking**: Counts completed points.
+- **Score Tracking**: Counts completed points for Dark and Light teams.
 - **Gender Ratio Indicator**: Displays "A" or "B" to indicate the gender ratio for the current point, following the ABBA pattern (A, B, B, A, A, B, B...).
+- **Undo Score**: Press back button to undo the last scored point, restoring the previous point timer and gender ratio.
 - **Pause Menu**: Custom menu to Resume, Save (and exit), or Discard (and exit) the session.
+- **Confirm Exit Dialog**: Safety confirmation when pressing back with no scores to undo.
 - **Activity Recording**: Records the game as a generic sport activity.
 
 ## Target Platform
 - **SDK Version**: **Minimum SDK 1.4.0**. This is an older framework level; avoid modern Connect IQ APIs introduced in later versions (e.g., System 3 or System 4 features) unless strictly verified.
-- **Devices**: Supports a wide range of Garmin devices including Vivoactive, Fenix, Forerunner, Epix, and Edge series. See `manifest.xml` for the full list.
+- **Devices**: Supports a wide range of Garmin devices including Vivoactive, Fenix, Forerunner, Epix, Instinct, Venu, and Edge series. See `manifest.xml` for the full list.
 
 ## Core Files
-- `source/UltiMateApp.mc`: Application entry point.
-- `source/GameModel.mc`: Core game logic and state management (scores, timing, gender ratio).
+- `source/UltiMateApp.mc`: Application entry point and lifecycle management.
+- `source/GameModel.mc`: Core game logic and state management (scores, timing, gender ratio, undo history).
 - `source/UltiMateView.mc`: Main display logic and UI rendering.
 - `source/UltiMateDelegate.mc`: Input handling (button presses) for the main game view.
 - `source/PauseMenuView.mc`: Custom view for the pause screen and menu.
 - `source/PauseMenuDelegate.mc`: Input handling for the pause menu.
+- `source/ConfirmExitView.mc`: Confirmation dialog when exiting without saving.
+- `source/ConfirmExitDelegate.mc`: Input handling for the exit confirmation dialog.
+- `source/FontConstants.mc`: Module for cached font height constants.
 
 ## Documentation
 - The API documentation for classes and methods is available at https://developer.garmin.com/connect-iq/api-docs/index.html
@@ -79,6 +84,9 @@ Following [Garmin's official coding conventions](https://developer.garmin.com/co
 - **Timers**:
     - Use `Toybox.Timer.Timer` for periodic updates (e.g., updating the clock every second).
     - Ensure timers are stopped in `onHide()` or `onStop()`.
+- **Font Heights**:
+    - Use the `FontConstants` module for pre-cached font heights.
+    - Avoid calling `Graphics.getFontHeight()` in `onUpdate()`.
 
 ## Logic Patterns
 - **Time Tracking**: Use `Toybox.System.getTimer()` for relative time measurement (milliseconds).
@@ -112,6 +120,8 @@ The application follows the standard Connect IQ App-View-Delegate pattern, with 
 ### 1. Application (`UltiMateApp.mc`)
 - Extends `Toybox.Application.AppBase`.
 - Manages the application lifecycle (`onStart`, `onStop`).
+- Initializes `FontConstants` module on app startup.
+- Maintains reference to main view for cleanup on exit.
 - `getInitialView()` returns the main `UltiMateView` and its associated `UltiMateDelegate`.
 
 ### 2. Model (`GameModel.mc`)
@@ -119,49 +129,87 @@ The application follows the standard Connect IQ App-View-Delegate pattern, with 
 - **Responsibilities**:
     - Track scores (`dark`, `light`).
     - Track timing (game start, point start, pause state).
-    - Calculate derived state (current gender ratio, formatted time strings).
+    - Calculate derived state (current gender ratio, next gender ratio, formatted time strings).
     - Handle game actions (`incrementDark`, `incrementLight`, `pause`, `resume`).
+    - Maintain score history for undo functionality (`_historyPoints`, `_historyPointStartTimes`).
+    - Provide `undoLastScore()` to revert the last scored point.
 
-### 3. View (`UltiMateView.mc`)
+### 3. Font Constants (`FontConstants.mc`)
+- Module (not a class) for caching font height values.
+- **Responsibilities**:
+    - Store pre-calculated font heights for all standard fonts.
+    - Initialized once at app startup via `FontConstants.initialize()`.
+    - Provides `FONT_TINY_HEIGHT`, `FONT_SMALL_HEIGHT`, `FONT_MEDIUM_HEIGHT`, `FONT_LARGE_HEIGHT`, and number font heights.
+- **Purpose**: Avoids repeated calls to `Graphics.getFontHeight()` in `onUpdate()` methods.
+
+### 4. View (`UltiMateView.mc`)
 - Extends `Toybox.WatchUi.View`.
 - **Responsibilities**:
     - Rendering the UI in `onUpdate(dc)`.
     - Managing the update timer (`_updateTimer`) which triggers screen refreshes every second.
     - Delegating game logic to `GameModel` instance.
     - Manages `ActivityRecording` session (start, stop, save, discard).
+    - Provides `undoLastScore()` method for delegate to call.
+    - Provides `showConfirmExit()` to push the exit confirmation view.
+    - Provides `cleanup()` for proper resource cleanup on app exit.
 - **Interaction**:
     - Uses `_gameModel` for all game state and logic.
     - Displays scores, times, and gender ratio from the model.
 
-### 4. Delegate (`UltiMateDelegate.mc`)
+### 5. Delegate (`UltiMateDelegate.mc`)
 - Extends `Toybox.WatchUi.BehaviorDelegate`.
 - **Responsibilities**:
-    - Handles user input during the active game (Select, Previous Page, Next Page).
+    - Handles user input during the active game (Select, Previous Page, Next Page, Back).
     - Triggers the pause state.
+    - Handles Back button: undoes last score or shows confirm exit dialog.
 - **Interaction**:
     - Calls `_view.incrementDark()` or `_view.incrementLight()` to update scores.
     - Calls `_view.pause()` to pause the game.
+    - Calls `_view.undoLastScore()` on back press.
+    - Calls `_view.showConfirmExit()` when no scores to undo.
     - Pushes `PauseMenuView` and `PauseMenuDelegate` when "Select" is pressed.
 
-### 5. Pause Menu View (`PauseMenuView.mc`)
+### 6. Pause Menu View (`PauseMenuView.mc`)
 - Extends `Toybox.WatchUi.View`.
 - **Responsibilities**:
     - Displays the "Paused" state, including a pause timer and menu options (Resume, Save, Discard).
     - Manages its own update timer to refresh the pause duration.
-    - Handles visual selection state of menu items.
+    - Handles visual selection state of menu items with scrolling display.
 - **Interaction**:
     - Uses `_gameModel` to get formatted pause duration.
     - Calls `_view.resume()`, `_view.saveSession()`, or `_view.discardSession()` based on selection.
 
-### 6. Pause Menu Delegate (`PauseMenuDelegate.mc`)
+### 7. Pause Menu Delegate (`PauseMenuDelegate.mc`)
 - Extends `Toybox.WatchUi.BehaviorDelegate`.
 - **Responsibilities**:
     - Handles user input while in the pause menu.
     - Maps physical buttons (Next Page, Previous Page) to menu navigation.
     - Maps "Select" button to executing the selected menu item.
+    - Maps "Back" button to resume and return to game.
 - **Interaction**:
     - Calls `_view.selectNext()`, `_view.selectPrevious()`, or `_view.selectItem()` on the `PauseMenuView`.
 
+### 8. Confirm Exit View (`ConfirmExitView.mc`)
+- Extends `Toybox.WatchUi.View`.
+- **Responsibilities**:
+    - Displays exit confirmation dialog ("Discard and exit?").
+    - Shows Yes/No options with visual selection state.
+    - Warns user that game will not be saved.
+- **Interaction**:
+    - Calls `_view.discardSession()` and `System.exit()` if "Yes" selected.
+    - Pops view if "No" selected to return to game.
+
+### 9. Confirm Exit Delegate (`ConfirmExitDelegate.mc`)
+- Extends `Toybox.WatchUi.BehaviorDelegate`.
+- **Responsibilities**:
+    - Handles user input in the confirm exit dialog.
+    - Maps physical buttons (Next Page, Previous Page) to option selection.
+    - Maps "Select" button to execute selected option.
+    - Maps "Back" button to cancel and return to game.
+- **Interaction**:
+    - Calls `_view.selectNext()`, `_view.selectPrevious()`, or `_view.selectItem()` on the `ConfirmExitView`.
+
 ## Resource Management
 - `resources/strings.xml`: Contains string definitions (e.g., AppName).
+- `resources/drawables.xml`: Contains drawable definitions (e.g., launcher icon).
 - `manifest.xml`: Defines app permissions, version, and supported products.

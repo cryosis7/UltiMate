@@ -44,6 +44,9 @@ Following [Garmin's official coding conventions](https://developer.garmin.com/co
 - **Timers**:
     - Use `Toybox.Timer.Timer` for periodic updates (e.g., updating the clock every second).
     - Ensure timers are stopped in `onHide()` or `onStop()`.
+- **Font Heights**:
+    - Use the `FontConstants` module for pre-cached font heights.
+    - Avoid calling `Graphics.getFontHeight()` in `onUpdate()`.
 
 ## Logic Patterns
 - **Time Tracking**: Use `Toybox.System.getTimer()` for relative time measurement (milliseconds).

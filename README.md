@@ -8,6 +8,9 @@ Ulti-Mate is a Garmin Connect IQ Watch Application designed to assist Ultimate F
 - **Point Timer**: Tracks duration of the current point.
 - **Score Tracking**: Counts completed points for Dark and Light teams.
 - **Gender Ratio Indicator**: Displays "A" or "B" to indicate the gender ratio for the current point, following the ABBA pattern.
+- **Undo Score**: Press back button to undo the last scored point.
+- **Pause Menu**: Custom menu to Resume, Save (and exit), or Discard (and exit) the session.
+- **Activity Recording**: Records the game as a generic sport activity.
 
 ## Prerequisites
 
@@ -39,7 +42,7 @@ connectiq
 Use `monkeyc` to compile the application. Replace `fr235` with your target device ID (e.g., `fenix7`, `vivoactive4`, etc.).
 
 ```bash
-monkeyc -o bin/UltiMate.prg -f monkey.jungle -d fr235 -y developer_key.der
+monkeyc -o bin/UltiMate.prg -f monkey.jungle -y developer_key.der
 ```
 
 *   `-o bin/UltiMate.prg`: Output program file.
@@ -97,6 +100,15 @@ monkeyc --package-app --release -o release/[version]/UltiMate.iq -f monkey.jungl
 ## Project Structure
 
 - `source/`: Contains the Monkey C source code (`.mc` files).
+  - `UltiMateApp.mc`: Application entry point.
+  - `GameModel.mc`: Core game logic and state management.
+  - `UltiMateView.mc`: Main display logic and UI rendering.
+  - `UltiMateDelegate.mc`: Input handling for the main game view.
+  - `PauseMenuView.mc`: Custom pause screen and menu view.
+  - `PauseMenuDelegate.mc`: Input handling for the pause menu.
+  - `ConfirmExitView.mc`: Exit confirmation dialog view.
+  - `ConfirmExitDelegate.mc`: Input handling for the exit confirmation.
+  - `FontConstants.mc`: Cached font height constants module.
 - `resources/`: Contains layout, string, and image resources.
 - `manifest.xml`: Application manifest defining permissions and supported devices.
 - `monkey.jungle`: Project configuration file.
@@ -105,14 +117,15 @@ monkeyc --package-app --release -o release/[version]/UltiMate.iq -f monkey.jungl
 
 This application supports a wide range of Garmin devices, including:
 - Forerunner series (235, 245, 255, 265, 945, 955, 965, etc.)
-- Fenix series (5, 6, 7)
+- Fenix series (5, 6, 7, 8)
 - Vivoactive series (3, 4, 5)
 - Epix series
 - Edge series
+- Instinct series
+- Venu series
 
 See `manifest.xml` for the complete list of supported products.
 
 ## Reference
 
 - [Monkey C Command Line Setup](https://developer.garmin.com/connect-iq/reference-guides/monkey-c-command-line-setup/)
-
