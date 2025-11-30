@@ -5,6 +5,7 @@ mir/
 internal-mir/
 *.prg
 *.prg.debug.xml
+release/
 
 # IDE and Editor Files
 .vscode/

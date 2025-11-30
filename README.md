@@ -80,6 +80,15 @@ To run the application on your actual Garmin watch, you need to "side-load" the 
    - The watch may display "Updating" briefly.
    - Go to your Activities/Apps list on the watch, and you should see "Ulti-Mate" (or the name defined in strings).
 
+## Release The App
+
+Build and package for release:
+```bash
+mkdir release/[version]/
+monkeyc --package-app --release -o release/[version]/UltiMate.iq -f monkey.jungle -y developer_key.der -O 2pz 
+```
+
+
 **Troubleshooting:**
 - If the app doesn't appear, check that the `device_id` used in the build command matches your physical device exactly.
 - Ensure you copied the file to `GARMIN/APPS` and not another folder.
