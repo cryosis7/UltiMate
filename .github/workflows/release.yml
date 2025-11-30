@@ -1,0 +1,140 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options: [patch, minor, major]
+  push:
+    branches: [main]
+
+jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+      version_tag: ${{ steps.version.outputs.VERSION_TAG }}
+      should_release: ${{ steps.version.outputs.SHOULD_RELEASE }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Version Type
+        id: version_type
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION_TYPE=${{ github.event.inputs.version_type }}" >> $GITHUB_OUTPUT
+          else
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            if echo "$COMMIT_MSG" | grep -qiE "(^|\s)(breaking|breaking:)"; then
+              echo "VERSION_TYPE=major" >> $GITHUB_OUTPUT
+            elif echo "$COMMIT_MSG" | grep -qiE "(^|\s)(feat|feat:)"; then
+              echo "VERSION_TYPE=minor" >> $GITHUB_OUTPUT
+            elif echo "$COMMIT_MSG" | grep -qiE "(^|\s)(fix|fix:)"; then
+              echo "VERSION_TYPE=patch" >> $GITHUB_OUTPUT
+            else
+              echo "VERSION_TYPE=none" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Check if Release Should Proceed
+        id: check_release
+        run: |
+          if [ "${{ steps.version_type.outputs.VERSION_TYPE }}" == "none" ]; then
+            echo "SHOULD_RELEASE=false" >> $GITHUB_OUTPUT
+            echo "No release keyword found in commit message. Skipping release."
+          else
+            echo "SHOULD_RELEASE=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Calculate Next Version
+        id: version
+        if: steps.check_release.outputs.SHOULD_RELEASE == 'true'
+        run: |
+          LATEST_TAG=$(git describe --tags --match "v*" --abbrev=0 2>/dev/null || echo "")
+          
+          if [ -z "$LATEST_TAG" ]; then
+            CURRENT_VERSION="0.0.0"
+          else
+            CURRENT_VERSION="${LATEST_TAG#v}"
+          fi
+          
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          
+          VERSION_TYPE="${{ steps.version_type.outputs.VERSION_TYPE }}"
+          
+          case "$VERSION_TYPE" in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          NEW_TAG="v${NEW_VERSION}"
+          
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "Previous version: $CURRENT_VERSION"
+          echo "New version: $NEW_VERSION"
+          echo "New tag: $NEW_TAG"
+
+      - name: Create and Push Tag
+        if: steps.check_release.outputs.SHOULD_RELEASE == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.VERSION_TAG }}" -m "Release ${{ steps.version.outputs.VERSION_TAG }}"
+          git push origin "${{ steps.version.outputs.VERSION_TAG }}"
+
+  build-and-release:
+    needs: determine-version
+    if: needs.determine-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Connect IQ SDK
+        run: |
+          wget -q https://developer.garmin.com/downloads/connect-iq/sdk-manager/connectiq-sdk-manager-linux.zip -O sdkmanager.zip
+          unzip -q sdkmanager.zip -d $HOME/connectiq-sdk-manager
+          chmod +x $HOME/connectiq-sdk-manager/bin/sdkmanager
+          $HOME/connectiq-sdk-manager/bin/sdkmanager --sdk-path $HOME/connectiq-sdk --accept-license --download-latest
+          echo "$HOME/connectiq-sdk/bin" >> $GITHUB_PATH
+
+      - name: Decode Developer Key
+        run: echo "${{ secrets.DEVELOPER_KEY }}" | base64 -d > developer_key.der
+
+      - name: Build Release Package
+        run: |
+          mkdir -p release/${{ needs.determine-version.outputs.version }}
+          monkeyc --package-app --release \
+            -o release/${{ needs.determine-version.outputs.version }}/UltiMate.iq \
+            -f monkey.jungle \
+            -y developer_key.der \
+            -O 2pz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.determine-version.outputs.version_tag }}
+          files: release/${{ needs.determine-version.outputs.version }}/UltiMate.iq
+          generate_release_notes: true
