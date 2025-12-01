@@ -118,7 +118,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsecret-1-0
+          sudo apt-get install -y libsecret-1-0 libwebkit2gtk-4.0-37
 
       - name: Install Connect IQ SDK
         run: |
