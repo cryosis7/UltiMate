@@ -1,161 +1,40 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version_type:
-        description: 'Version bump type'
-        required: true
-        type: choice
-        options: [patch, minor, major]
   push:
-    branches: [main]
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  determine-version:
-    runs-on: windows-latest
-    outputs:
-      version: ${{ steps.version.outputs.VERSION }}
-      version_tag: ${{ steps.version.outputs.VERSION_TAG }}
-      should_release: ${{ steps.check_release.outputs.SHOULD_RELEASE }}
+  create-release:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Determine Version Type
-        id: version_type
-        shell: pwsh
-        run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            "VERSION_TYPE=${{ github.event.inputs.version_type }}" >> $env:GITHUB_OUTPUT
-          } else {
-            $commitMsg = "${{ github.event.head_commit.message }}"
-            if ($commitMsg -match "(?i)(^|\s)(breaking|breaking:)") {
-              "VERSION_TYPE=major" >> $env:GITHUB_OUTPUT
-            } elseif ($commitMsg -match "(?i)(^|\s)(feat|feat:)") {
-              "VERSION_TYPE=minor" >> $env:GITHUB_OUTPUT
-            } elseif ($commitMsg -match "(?i)(^|\s)(fix|fix:)") {
-              "VERSION_TYPE=patch" >> $env:GITHUB_OUTPUT
-            } else {
-              "VERSION_TYPE=none" >> $env:GITHUB_OUTPUT
-            }
-          }
-
-      - name: Check if Release Should Proceed
-        id: check_release
-        shell: pwsh
-        run: |
-          if ("${{ steps.version_type.outputs.VERSION_TYPE }}" -eq "none") {
-            "SHOULD_RELEASE=false" >> $env:GITHUB_OUTPUT
-            Write-Host "No release keyword found in commit message. Skipping release."
-          } else {
-            "SHOULD_RELEASE=true" >> $env:GITHUB_OUTPUT
-          }
-
-      - name: Calculate Next Version
+      - name: Extract version from tag
         id: version
-        if: steps.check_release.outputs.SHOULD_RELEASE == 'true'
-        shell: pwsh
         run: |
-          $latestTag = git describe --tags --match "v*" --abbrev=0 2>$null
-          if ($LASTEXITCODE -ne 0) { $latestTag = "" }
-          
-          if ([string]::IsNullOrEmpty($latestTag)) {
-            $currentVersion = "0.0.0"
-          } else {
-            $currentVersion = $latestTag.TrimStart('v')
-          }
-          
-          $versionParts = $currentVersion.Split('.')
-          $major = [int]$versionParts[0]
-          $minor = [int]$versionParts[1]
-          $patch = [int]$versionParts[2]
-          
-          $versionType = "${{ steps.version_type.outputs.VERSION_TYPE }}"
-          
-          switch ($versionType) {
-            "major" {
-              $major++
-              $minor = 0
-              $patch = 0
-            }
-            "minor" {
-              $minor++
-              $patch = 0
-            }
-            "patch" {
-              $patch++
-            }
-          }
-          
-          $newVersion = "$major.$minor.$patch"
-          $newTag = "v$newVersion"
-          
-          "VERSION=$newVersion" >> $env:GITHUB_OUTPUT
-          "VERSION_TAG=$newTag" >> $env:GITHUB_OUTPUT
-          Write-Host "Previous version: $currentVersion"
-          Write-Host "New version: $newVersion"
-          Write-Host "New tag: $newTag"
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG_NAME#v}"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION from tag: $TAG_NAME"
 
-      - name: Create and Push Tag
-        if: steps.check_release.outputs.SHOULD_RELEASE == 'true'
-        shell: pwsh
+      - name: Verify artifact exists
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ steps.version.outputs.VERSION_TAG }}" -m "Release ${{ steps.version.outputs.VERSION_TAG }}"
-          git push origin "${{ steps.version.outputs.VERSION_TAG }}"
-
-  build-and-release:
-    needs: determine-version
-    if: needs.determine-version.outputs.should_release == 'true'
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Install Connect IQ SDK
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri "https://developer.garmin.com/downloads/connect-iq/sdk-manager/connectiq-sdk-manager-windows.zip" -OutFile "sdkmanager.zip"
-          Expand-Archive -Path "sdkmanager.zip" -DestinationPath "$env:USERPROFILE\connectiq-sdk-manager-windows" -Force
-          $sdkManagerPath = "$env:USERPROFILE\connectiq-sdk-manager-windows\sdkmanager.exe"
-          if (-not (Test-Path $sdkManagerPath)) {
-            Write-Error "sdkmanager.exe not found at $sdkManagerPath"
+          ARTIFACT_PATH="release/${{ steps.version.outputs.VERSION }}/UltiMate.iq"
+          if [ ! -f "$ARTIFACT_PATH" ]; then
+            echo "Error: Release artifact not found at $ARTIFACT_PATH"
             exit 1
-          }
-          & $sdkManagerPath --sdk-path "$env:USERPROFILE\connectiq-sdk" --accept-license --download-latest
-          $sdkBinPath = "$env:USERPROFILE\connectiq-sdk\bin"
-          $env:PATH = "$sdkBinPath;$env:PATH"
-
-      - name: Decode Developer Key
-        shell: pwsh
-        run: |
-          $keyBytes = [System.Convert]::FromBase64String("${{ secrets.DEVELOPER_KEY }}")
-          [System.IO.File]::WriteAllBytes("$PWD\developer_key.der", $keyBytes)
-
-      - name: Build Release Package
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path "release\${{ needs.determine-version.outputs.version }}"
-          monkeyc --package-app --release `
-            -o "release\${{ needs.determine-version.outputs.version }}\UltiMate.iq" `
-            -f monkey.jungle `
-            -y developer_key.der `
-            -O 2pz
+          fi
+          echo "Found artifact: $ARTIFACT_PATH"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.determine-version.outputs.version_tag }}
-          files: release/${{ needs.determine-version.outputs.version }}/UltiMate.iq
+          tag_name: ${{ steps.version.outputs.TAG_NAME }}
+          files: release/${{ steps.version.outputs.VERSION }}/UltiMate.iq
           generate_release_notes: true
