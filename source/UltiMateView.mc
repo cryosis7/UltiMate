@@ -25,9 +25,9 @@ class UltiMateView extends WatchUi.View {
     
     // Layout variables
     private var _width;
-    private var _labelOffset;
     private var _labelFontSize;
-    private var _valueFontSize;
+    private var _genderFontSize;
+    private var _numberFontSize;
     private var _yOneThird;
     private var _ySection1;
     private var _ySection2;
@@ -41,6 +41,7 @@ class UltiMateView extends WatchUi.View {
     private var _yCurrentTimePos;
     private var _yTimerLabelPos;
     private var _yTimerValuePos;
+    private var _yGenderPos;
     private var _xGenderNextPos;
     
     function initialize() {
@@ -64,13 +65,21 @@ class UltiMateView extends WatchUi.View {
     // Calculate layout positions based on screen dimensions
     function onLayout(dc) {
         _labelFontSize = Graphics.FONT_TINY;
-        _labelOffset = FontConstants.FONT_TINY_HEIGHT;
-        _valueFontSize = Graphics.FONT_LARGE;
-        
+        _genderFontSize = Graphics.FONT_LARGE;
+        _numberFontSize = Graphics.FONT_NUMBER_MILD;
+
         var height = dc.getHeight();
+        var isSmallScreen = false;
+        if (height <= 176) {
+            isSmallScreen = true;
+        }
 
         _yOneThird = height / 3;
-        var buffer = _yOneThird * 0.2;
+        var buffer = _yOneThird * 0.15;
+        if (isSmallScreen) {
+            buffer = _yOneThird * 0.1;
+        }
+
         _ySection1 = _yOneThird - buffer;
         _ySection2 = (_yOneThird * 2) + buffer;
         
@@ -84,10 +93,12 @@ class UltiMateView extends WatchUi.View {
         _yScorePos = _ySection1 / 2;
         
         var middleSectionHeight = _ySection2 - _ySection1;
-        _yCurrentTimePos = _ySection1 + (middleSectionHeight * 0.25);
-        _yTimerLabelPos = _ySection1 + (middleSectionHeight * 0.5);
-        _yTimerValuePos = _ySection1 + (middleSectionHeight * 0.75);
+        var padding = isSmallScreen ? 0 : middleSectionHeight * 0.1;
+        _yCurrentTimePos = _ySection1;
+        _yTimerValuePos = _ySection2 - padding - Graphics.getFontHeight(_numberFontSize);
+        _yTimerLabelPos = _yTimerValuePos - Graphics.getFontHeight(_labelFontSize);
         
+        _yGenderPos = _ySection2 + Graphics.getFontHeight(_labelFontSize);
         _xGenderNextPos = _xCenter * 1.25;
     }
 
@@ -127,26 +138,26 @@ class UltiMateView extends WatchUi.View {
 
         // Draw Dark score (left, white text on black) at 66% of the way across it's section
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xScoreDarkPos, _yScorePos, Graphics.FONT_NUMBER_MILD, _gameModel.getScoreDark().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(_xScoreDarkPos, _yScorePos, _numberFontSize, _gameModel.getScoreDark().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
         
         // Draw Light score (right, black text on white) at 33% of the way across it's section
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xScoreLightPos, _yScorePos, Graphics.FONT_NUMBER_MILD, _gameModel.getScoreLight().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(_xScoreLightPos, _yScorePos, _numberFontSize, _gameModel.getScoreLight().toString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // ------------------------------------------------------------
         // Current Time (Centered)
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xCenter, _yCurrentTimePos, Graphics.FONT_TINY, currentTimeStr, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(_xCenter, _yCurrentTimePos, Graphics.FONT_TINY, currentTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
         
         // Total Time (Left half)
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xFirstQuarter, _yTimerLabelPos, _labelFontSize, "Total", Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-        dc.drawText(_xFirstQuarter, _yTimerValuePos, Graphics.FONT_NUMBER_MILD, totalTimeStr, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(_xFirstQuarter, _yTimerLabelPos, _labelFontSize, "Total", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_xFirstQuarter, _yTimerValuePos, _numberFontSize, totalTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
 
         // Point Time (Right half)
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xThirdQuarter, _yTimerLabelPos, _labelFontSize, "Point", Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-        dc.drawText(_xThirdQuarter, _yTimerValuePos, Graphics.FONT_NUMBER_MILD, pointTimeStr, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(_xThirdQuarter, _yTimerLabelPos, _labelFontSize, "Point", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_xThirdQuarter, _yTimerValuePos, _numberFontSize, pointTimeStr, Graphics.TEXT_JUSTIFY_CENTER);
 
         // ------------------------------------------------------------
 
@@ -155,10 +166,10 @@ class UltiMateView extends WatchUi.View {
         dc.drawText(_xCenter, _ySection2, _labelFontSize, "Gender", Graphics.TEXT_JUSTIFY_CENTER);
         // Draw current gender in white (centered)
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xCenter, _ySection2 + _labelOffset, _valueFontSize, _gameModel.getCurrentGender(), Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_xCenter, _yGenderPos, _genderFontSize, _gameModel.getCurrentGender(), Graphics.TEXT_JUSTIFY_CENTER);
         // Draw next gender in dark grey - centered, slightly right
-        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xGenderNextPos, _ySection2 + _labelOffset, _valueFontSize, _gameModel.getNextGender(), Graphics.TEXT_JUSTIFY_CENTER);
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(_xGenderNextPos, _yGenderPos, _genderFontSize, _gameModel.getNextGender(), Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     // Called when this View is removed from the screen. Save the

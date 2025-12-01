@@ -11,8 +11,14 @@ class ConfirmExitView extends WatchUi.View {
     private var _centerX;
     private var _centerY;
     private var _messageY;
+    private var _yesY;
+    private var _noY;
     private var _selectedIndex; // 0 = Yes, 1 = No
     private var _viewRef;
+
+    private var _headingFont = Graphics.FONT_MEDIUM;
+    private var _optionSelectedFont = Graphics.FONT_MEDIUM;
+    private var _optionUnselectedFont = Graphics.FONT_SMALL;
     
     function initialize(viewRef) {
         View.initialize();
@@ -23,10 +29,18 @@ class ConfirmExitView extends WatchUi.View {
     function onLayout(dc) {
         var width = dc.getWidth();
         var height = dc.getHeight();
+        System.println("Size: " + width + "x" + height);
+
+        if (width <= 240) {
+            _headingFont = Graphics.FONT_SMALL;
+        }
         
         _centerX = width / 2;
         _centerY = height / 2;
-        _messageY = _centerY - FontConstants.FONT_MEDIUM_HEIGHT - FontConstants.FONT_SMALL_HEIGHT;
+        _messageY = _centerY - (2 * Graphics.getFontHeight(_headingFont));
+        _yesY = _centerY;
+        _noY = _yesY + FontConstants.FONT_MEDIUM_HEIGHT + Graphics.getFontDescent(Graphics.FONT_SMALL);
+
     }
 
     function onUpdate(dc) {
@@ -36,27 +50,24 @@ class ConfirmExitView extends WatchUi.View {
         
         // Draw confirmation message
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX, _messageY, Graphics.FONT_MEDIUM, "Discard and exit?", Graphics.TEXT_JUSTIFY_CENTER);
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX, _messageY + FontConstants.FONT_MEDIUM_HEIGHT, Graphics.FONT_SMALL, "Your game will not be saved", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _messageY, _headingFont, "Discard and exit?", Graphics.TEXT_JUSTIFY_CENTER);
         
-        var optionY = _centerY + FontConstants.FONT_SMALL_HEIGHT;
-        
+        // Draw Yes option
         if (_selectedIndex == 0) {
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(_centerX, optionY, Graphics.FONT_MEDIUM, "Yes", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(_centerX, _yesY, _optionSelectedFont, "Yes", Graphics.TEXT_JUSTIFY_CENTER);
         } else {
             dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(_centerX, optionY, Graphics.FONT_SMALL, "Yes", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(_centerX, _yesY, _optionUnselectedFont, "Yes", Graphics.TEXT_JUSTIFY_CENTER);
         }
-        
-        var noY = optionY + FontConstants.FONT_MEDIUM_HEIGHT + FontConstants.FONT_SMALL_HEIGHT;
+         
+        // Draw No option
         if (_selectedIndex == 1) {
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(_centerX, noY, Graphics.FONT_MEDIUM, "No", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(_centerX, _noY, _optionSelectedFont, "No", Graphics.TEXT_JUSTIFY_CENTER);
         } else {
             dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(_centerX, noY, Graphics.FONT_SMALL, "No", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(_centerX, _noY, _optionUnselectedFont, "No", Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
     

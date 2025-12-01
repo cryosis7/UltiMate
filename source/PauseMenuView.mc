@@ -78,11 +78,11 @@ class PauseMenuView extends WatchUi.View {
         dc.drawText(_centerX, _menuStartY, Graphics.FONT_MEDIUM, currentItem, Graphics.TEXT_JUSTIFY_CENTER);
         
         // Draw previous item
-        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_centerX, _menuStartY - _smallFontHeight, Graphics.FONT_SMALL, MENU_ITEMS[prevIndex], Graphics.TEXT_JUSTIFY_CENTER);
 
         // Draw next item 
-        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_centerX, _menuStartY + _mediumFontHeight, Graphics.FONT_SMALL, MENU_ITEMS[nextIndex], Graphics.TEXT_JUSTIFY_CENTER);
     }
 
