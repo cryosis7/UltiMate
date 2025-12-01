@@ -134,7 +134,8 @@ jobs:
             exit 1
           }
           & $sdkManagerPath --sdk-path "$env:USERPROFILE\connectiq-sdk" --accept-license --download-latest
-          "$env:USERPROFILE\connectiq-sdk\bin" >> $env:GITHUB_PATH
+          $sdkBinPath = "$env:USERPROFILE\connectiq-sdk\bin"
+          $env:PATH = "$sdkBinPath;$env:PATH"
 
       - name: Decode Developer Key
         shell: pwsh
