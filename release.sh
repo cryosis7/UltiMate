@@ -6,7 +6,7 @@ set -e
 # Example: ./release.sh 1.0.0
 # If no version provided, will prompt for version type (patch/minor/major)
 
-DEVELOPER_KEY="../keys/developer_key.der"
+DEVELOPER_KEY="$HOME/Documents/Certs/developer_key.der"
 
 # Function to get current version from latest tag
 get_current_version() {
