@@ -20,7 +20,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
       version_tag: ${{ steps.version.outputs.VERSION_TAG }}
-      should_release: ${{ steps.version.outputs.SHOULD_RELEASE }}
+      should_release: ${{ steps.check_release.outputs.SHOULD_RELEASE }}
     steps:
       - uses: actions/checkout@v4
         with:
