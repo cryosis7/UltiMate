@@ -128,7 +128,12 @@ jobs:
         run: |
           Invoke-WebRequest -Uri "https://developer.garmin.com/downloads/connect-iq/sdk-manager/connectiq-sdk-manager-windows.zip" -OutFile "sdkmanager.zip"
           Expand-Archive -Path "sdkmanager.zip" -DestinationPath "$env:USERPROFILE\connectiq-sdk-manager" -Force
-          & "$env:USERPROFILE\connectiq-sdk-manager\bin\sdkmanager.bat" --sdk-path "$env:USERPROFILE\connectiq-sdk" --accept-license --download-latest
+          $sdkManagerPath = "$env:USERPROFILE\connectiq-sdk-manager\bin\sdkmanager.bat"
+          if (-not (Test-Path $sdkManagerPath)) {
+            Write-Error "sdkmanager.bat not found at $sdkManagerPath"
+            exit 1
+          }
+          cmd.exe /c "`"$sdkManagerPath`" --sdk-path `"$env:USERPROFILE\connectiq-sdk`" --accept-license --download-latest"
           "$env:USERPROFILE\connectiq-sdk\bin" >> $env:GITHUB_PATH
 
       - name: Decode Developer Key
