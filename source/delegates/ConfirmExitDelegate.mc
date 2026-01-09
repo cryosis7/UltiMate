@@ -1,37 +1,32 @@
 using Toybox.WatchUi;
 
-/**
- * Delegate for the confirm exit view to handle button input.
- */
 class ConfirmExitDelegate extends WatchUi.BehaviorDelegate {
 
-    private var _viewRef;
+    private var _view;
 
-    function initialize(viewRef) {
+    function initialize(view) {
         BehaviorDelegate.initialize();
-        _viewRef = viewRef;
+        _view = view;
     }
 
     function onSelect() {
-        _viewRef.selectItem();
+        _view.selectItem();
         return true;
     }
     
     function onNextPage() {
-        _viewRef.selectNext();
+        _view.selectNext();
         return true;
     }
     
     function onPreviousPage() {
-        _viewRef.selectPrevious();
+        _view.selectPrevious();
         return true;
     }
     
     function onBack() {
-        // Cancel - just go back (same as selecting "No")
         WatchUi.popView(WatchUi.SLIDE_DOWN);
         return true;
     }
 
 }
-

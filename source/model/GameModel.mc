@@ -1,4 +1,6 @@
 using Toybox.System;
+using Toybox.ActivityRecording;
+using Toybox.Position;
 
 /**
  * GameModel manages the core game state and logic for Ulti-Mate.
@@ -10,11 +12,13 @@ using Toybox.System;
  * - Track timing (game start, point start, pause state)
  * - Calculate derived state (current gender ratio, formatted time strings)
  * - Handle game actions (incrementScore, pause, resume)
+ * - Manage ActivityRecording session lifecycle
  */
 class GameModel {
 
     private const POINT_DARK = 0;
     private const POINT_LIGHT = 1;
+    private const MAX_HISTORY_SIZE = 50;
 
     private var _gameStartTime;
     private var _pointStartTime;
@@ -26,8 +30,10 @@ class GameModel {
     private var _nextGender;
     private var _historyPoints;
     private var _historyPointStartTimes;
+    private var _session;
+    private var _startingGender;
 
-    function initialize() {
+    function initialize(startingGender) {
         var now = System.getTimer();
         _gameStartTime = now;
         _pointStartTime = now;
@@ -35,9 +41,26 @@ class GameModel {
         _scoreLight = 0;
         _isPaused = false;
         _pauseStartTime = null;
+        _startingGender = startingGender;
         setGender();
         _historyPoints = [];
         _historyPointStartTimes = [];
+        _session = null;
+        
+        if (ActivityRecording has :createSession) {
+            _session = ActivityRecording.createSession({
+                :name => "UltimateFrisbee",
+                :sport => ActivityRecording.SPORT_GENERIC,
+                :subSport => ActivityRecording.SUB_SPORT_GENERIC
+            });
+            if (_session != null && _session has :start) {
+                _session.start();
+            }
+        }
+        
+        if (Position has :enableLocationEvents) {
+            Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPosition));
+        }
     }
 
     /**
@@ -49,6 +72,10 @@ class GameModel {
             var now = (currentTime != null) ? currentTime : System.getTimer();
             _historyPoints.add(POINT_DARK);
             _historyPointStartTimes.add(_pointStartTime);
+            if (_historyPoints.size() > MAX_HISTORY_SIZE) {
+                _historyPoints = _historyPoints.slice(-MAX_HISTORY_SIZE, null);
+                _historyPointStartTimes = _historyPointStartTimes.slice(-MAX_HISTORY_SIZE, null);
+            }
             _scoreDark += 1;
             newPoint(now);
         }
@@ -61,9 +88,12 @@ class GameModel {
     function incrementLight(currentTime) as Void {
         if (!_isPaused) {
             var now = (currentTime != null) ? currentTime : System.getTimer();
-            // Push history before incrementing
             _historyPoints.add(POINT_LIGHT);
             _historyPointStartTimes.add(_pointStartTime);
+            if (_historyPoints.size() > MAX_HISTORY_SIZE) {
+                _historyPoints = _historyPoints.slice(-MAX_HISTORY_SIZE, null);
+                _historyPointStartTimes = _historyPointStartTimes.slice(-MAX_HISTORY_SIZE, null);
+            }
             _scoreLight += 1;
             newPoint(now);
         }
@@ -245,23 +275,102 @@ class GameModel {
      * Pattern: A, B, B, A, A, B, B, A...
      * Points 0, 3, 4, 7, 8... = A
      * Points 1, 2, 5, 6, 9, 10... = B
+     * 
+     * If startingGender is set to "M" or "F", uses M/F pattern instead:
+     * - If "M": M, F, F, M, M, F, F, M...
+     * - If "F": F, M, M, F, F, M, M, F...
      */
     private function setGender() as Void {
         var points = _scoreLight + _scoreDark;
         
         var mod = points % 4;
-        if (mod == 1 || mod == 2) {
-            _currentGender = "B";
+        var isFirstGender = (mod == 0 || mod == 3);
+        
+        if (_startingGender == null) {
+            if (isFirstGender) {
+                _currentGender = "A";
+            } else {
+                _currentGender = "B";
+            }
+            
+            var nextPoint = points + 1;
+            var nextMod = nextPoint % 4;
+            if (nextMod == 0 || nextMod == 3) {
+                _nextGender = "A";
+            } else {
+                _nextGender = "B";
+            }
         } else {
-            _currentGender = "A";
+            if (isFirstGender) {
+                _currentGender = _startingGender;
+                _nextGender = _startingGender.equals("M") ? "F" : "M";
+            } else {
+                _currentGender = _startingGender.equals("M") ? "F" : "M";
+                _nextGender = _currentGender;
+            }
+            
+            var nextPoint = points + 1;
+            var nextMod = nextPoint % 4;
+            if (nextMod == 0 || nextMod == 3) {
+                _nextGender = _startingGender;
+            } else {
+                _nextGender = _startingGender.equals("M") ? "F" : "M";
+            }
+        }
+    }
+
+    /**
+     * Callback for position updates from GPS.
+     * @param info Position.Info object containing location data.
+     */
+    function onPosition(info as Position.Info) as Void {
+        if (_session != null && info != null && info.position != null) {
+            
+        }
+    }
+
+    /**
+     * Save the activity recording session.
+     */
+    function saveSession() as Void {
+        if (_session != null && _session has :stop) {
+            _session.stop();
+        }
+        if (_session != null && _session has :save) {
+            _session.save();
+        }
+        _session = null;
+    }
+
+    /**
+     * Discard the activity recording session.
+     */
+    function discardSession() as Void {
+        if (_session != null && _session has :stop) {
+            _session.stop();
+        }
+        if (_session != null && _session has :discard) {
+            _session.discard();
+        }
+        _session = null;
+    }
+
+    /**
+     * Cleanup resources when the model is being destroyed.
+     */
+    function cleanup() as Void {
+        if (Position has :enableLocationEvents) {
+            Position.enableLocationEvents(Position.LOCATION_DISABLE, method(:onPosition));
         }
         
-        var nextPoint = points + 1;
-        var nextMod = nextPoint % 4;
-        if (nextMod == 1 || nextMod == 2) {
-            _nextGender = "B";
-        } else {
-            _nextGender = "A";
+        if (_session != null) {
+            if (_session has :stop) {
+                _session.stop();
+            }
+            if (_session has :discard) {
+                _session.discard();
+            }
+            _session = null;
         }
     }
 

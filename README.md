@@ -108,7 +108,6 @@ monkeyc --package-app --release -o release/[version]/UltiMate.iq -f monkey.jungl
   - `PauseMenuDelegate.mc`: Input handling for the pause menu.
   - `ConfirmExitView.mc`: Exit confirmation dialog view.
   - `ConfirmExitDelegate.mc`: Input handling for the exit confirmation.
-  - `FontConstants.mc`: Cached font height constants module.
 - `resources/`: Contains layout, string, and image resources.
 - `manifest.xml`: Application manifest defining permissions and supported devices.
 - `monkey.jungle`: Project configuration file.
@@ -125,6 +124,16 @@ This application supports a wide range of Garmin devices, including:
 - Venu series
 
 See `manifest.xml` for the complete list of supported products.
+
+## Recommended Test Devices
+
+- Forerunner 235 (`fr235`)
+- Forerunner 255 (`fr255`)
+- Forerunner 55 (`fr55`)
+- Fenix 6 Pro (`fenix6pro`)
+- Venu 2 (`venu2`)
+- Venu 2S (`venu2s`)
+- Venu Sq 2 (`venusq2`)
 
 ## Reference
 
