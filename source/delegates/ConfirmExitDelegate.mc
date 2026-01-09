@@ -1,23 +1,32 @@
-using Toybox.Lang;
-using Toybox.System;
 using Toybox.WatchUi;
 
-class ConfirmExitDelegate extends WatchUi.MenuInputDelegate {
+class ConfirmExitDelegate extends WatchUi.BehaviorDelegate {
 
-    private var _viewRef;
+    private var _view;
 
-    function initialize(viewRef) {
-        MenuInputDelegate.initialize();
-        _viewRef = viewRef;
+    function initialize(view) {
+        BehaviorDelegate.initialize();
+        _view = view;
     }
 
-    function onMenuItem(item as Lang.Symbol) as Void {
-        if (item == :yes) {
-            _viewRef.discardSession();
-            System.exit();
-        } else if (item == :no) {
-            WatchUi.popView(WatchUi.SLIDE_DOWN);
-        }
+    function onSelect() {
+        _view.selectItem();
+        return true;
+    }
+    
+    function onNextPage() {
+        _view.selectNext();
+        return true;
+    }
+    
+    function onPreviousPage() {
+        _view.selectPrevious();
+        return true;
+    }
+    
+    function onBack() {
+        WatchUi.popView(WatchUi.SLIDE_DOWN);
+        return true;
     }
 
 }

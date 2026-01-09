@@ -1,24 +1,32 @@
-using Toybox.Lang;
 using Toybox.WatchUi;
 
-class SettingsMenuDelegate extends WatchUi.MenuInputDelegate {
+class SettingsMenuDelegate extends WatchUi.BehaviorDelegate {
 
-    function initialize() {
-        MenuInputDelegate.initialize();
+    private var _view;
+
+    function initialize(view) {
+        BehaviorDelegate.initialize();
+        _view = view;
     }
 
-    function onMenuItem(item as Lang.Symbol) as Void {
-        if (item == :gender) {
-            var genderMenu = new WatchUi.Menu();
-            genderMenu.setTitle("Starting Gender");
-            genderMenu.addItem("ABBA", :abba);
-            genderMenu.addItem("Female", :female);
-            genderMenu.addItem("Male", :male);
-            
-            WatchUi.pushView(genderMenu, new GenderSelectDelegate(), WatchUi.SLIDE_LEFT);
-        } else if (item == :back) {
-            WatchUi.popView(WatchUi.SLIDE_RIGHT);
-        }
+    function onSelect() {
+        _view.selectItem();
+        return true;
+    }
+    
+    function onNextPage() {
+        _view.selectNext();
+        return true;
+    }
+    
+    function onPreviousPage() {
+        _view.selectPrevious();
+        return true;
+    }
+    
+    function onBack() {
+        WatchUi.popView(WatchUi.SLIDE_RIGHT);
+        return true;
     }
 
 }

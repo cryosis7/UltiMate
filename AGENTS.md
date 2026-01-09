@@ -20,12 +20,14 @@ Ulti-Mate is a Garmin Connect IQ Watch Application designed to assist Ultimate F
 ## Core Files
 - `source/UltiMateApp.mc`: Application entry point and lifecycle management.
 - `source/GameModel.mc`: Core game logic and state management (scores, timing, gender ratio, undo history).
-- `source/UltiMateView.mc`: Main display logic and UI rendering.
-- `source/UltiMateDelegate.mc`: Input handling (button presses) for the main game view.
-- `source/PauseMenuView.mc`: Custom view for the pause screen and menu.
-- `source/PauseMenuDelegate.mc`: Input handling for the pause menu.
-- `source/ConfirmExitView.mc`: Confirmation dialog when exiting without saving.
-- `source/ConfirmExitDelegate.mc`: Input handling for the exit confirmation dialog.
+- `source/views/UltiMateView.mc`: Main display logic and UI rendering.
+- `source/delegates/UltiMateDelegate.mc`: Input handling (button presses) for the main game view.
+- `source/views/BaseMenuView.mc`: Reusable base class for scrolling menu views.
+- `source/views/StartMenuView.mc`: Initial menu view (Start, Settings, Exit).
+- `source/views/PauseMenuView.mc`: Custom view for the pause screen and menu.
+- `source/delegates/PauseMenuDelegate.mc`: Input handling for the pause menu.
+- `source/views/ConfirmExitView.mc`: Confirmation dialog when exiting without saving.
+- `source/delegates/ConfirmExitDelegate.mc`: Input handling for the exit confirmation dialog.
 
 ## Documentation
 - The API documentation for classes and methods is available at https://developer.garmin.com/connect-iq/api-docs/index.html
@@ -81,6 +83,8 @@ Ulti-Mate is a Garmin Connect IQ Watch Application designed to assist Ultimate F
 - **One Class Per File**: Each file should contain only one class or module.
 - **File Naming**: Match the filename to the primary class name (e.g., `GameModel.mc` contains `GameModel` class).
 - **Separation of Concerns**: Keep UI logic in Views, input handling in Delegates, and business logic in Model classes.
+- **Inheritance**: Use `extends` keyword for class inheritance. Call parent methods using `ParentClass.methodName()` syntax (not `super`).
+- **Code Reuse**: Extract common functionality into base classes. Use member variables for static configuration and overridable methods for dynamic values.
 
 ## Common Imports
 ```monkeyc
@@ -141,17 +145,44 @@ The application follows the standard Connect IQ App-View-Delegate pattern, with 
     - Calls `_view.showConfirmExit()` when no scores to undo.
     - Pushes `PauseMenuView` and `PauseMenuDelegate` when "Select" is pressed.
 
-### 5. Pause Menu View (`PauseMenuView.mc`)
+### 5. Base Menu View (`BaseMenuView.mc`)
 - Extends `Toybox.WatchUi.View`.
 - **Responsibilities**:
-    - Displays the "Paused" state, including a pause timer and menu options (Resume, Save, Discard).
-    - Manages its own update timer to refresh the pause duration.
-    - Handles visual selection state of menu items with scrolling display.
+    - Provides reusable scrolling menu functionality for all menu views.
+    - Manages menu navigation state (`_selectedIndex`) and common layout variables.
+    - Handles menu rendering with current item large, prev/next items smaller.
+    - Adjusts layout automatically when subheading is present (menu starts lower).
+- **Configuration**:
+    - Subclasses set `_title` and `_menuItems` in `initialize()`.
+    - Subclasses override `getSubheading()` to return dynamic text (returns `null` by default).
+    - Subclasses override `selectItem()` to handle menu item selection.
+- **Common Methods**:
+    - `selectNext()`, `selectPrevious()`, `getSelectedIndex()` - menu navigation.
+    - `onLayout(dc)` - calculates positions based on presence of subheading.
+    - `onUpdate(dc)` - draws title, optional subheading, and menu items.
+    - `drawMenu(dc)` - renders the scrolling menu.
+
+### 6. Start Menu View (`StartMenuView.mc`)
+- Extends `BaseMenuView`.
+- **Responsibilities**:
+    - Displays the initial menu with "Ulti-Mate" title.
+    - Provides menu items: Start, Settings, Exit.
 - **Interaction**:
-    - Uses `_gameModel` to get formatted pause duration.
+    - Starts game by switching to `UltiMateView`.
+    - Opens settings menu to configure gender ratio.
+    - Exits application.
+
+### 7. Pause Menu View (`PauseMenuView.mc`)
+- Extends `BaseMenuView`.
+- **Responsibilities**:
+    - Displays the "Paused" state with pause timer as subheading.
+    - Provides menu items: Resume, Save, Discard.
+    - Manages update timer to refresh the pause duration.
+- **Interaction**:
+    - Uses `_gameModel` to get formatted pause duration via `getSubheading()`.
     - Calls `_view.resume()`, `_view.saveSession()`, or `_view.discardSession()` based on selection.
 
-### 6. Pause Menu Delegate (`PauseMenuDelegate.mc`)
+### 8. Pause Menu Delegate (`PauseMenuDelegate.mc`)
 - Extends `Toybox.WatchUi.BehaviorDelegate`.
 - **Responsibilities**:
     - Handles user input while in the pause menu.
@@ -161,7 +192,7 @@ The application follows the standard Connect IQ App-View-Delegate pattern, with 
 - **Interaction**:
     - Calls `_view.selectNext()`, `_view.selectPrevious()`, or `_view.selectItem()` on the `PauseMenuView`.
 
-### 7. Confirm Exit View (`ConfirmExitView.mc`)
+### 9. Confirm Exit View (`ConfirmExitView.mc`)
 - Extends `Toybox.WatchUi.View`.
 - **Responsibilities**:
     - Displays exit confirmation dialog ("Discard and exit?").
@@ -171,7 +202,7 @@ The application follows the standard Connect IQ App-View-Delegate pattern, with 
     - Calls `_view.discardSession()` and `System.exit()` if "Yes" selected.
     - Pops view if "No" selected to return to game.
 
-### 8. Confirm Exit Delegate (`ConfirmExitDelegate.mc`)
+### 10. Confirm Exit Delegate (`ConfirmExitDelegate.mc`)
 - Extends `Toybox.WatchUi.BehaviorDelegate`.
 - **Responsibilities**:
     - Handles user input in the confirm exit dialog.

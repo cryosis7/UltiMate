@@ -20,6 +20,7 @@ class UltiMateView extends WatchUi.View {
 
     private var _gameModel;
     private var _updateTimer;
+    private var _genderEnabled;
     
     // Layout variables
     private var _width;
@@ -46,6 +47,7 @@ class UltiMateView extends WatchUi.View {
         View.initialize();
         _gameModel = new GameModel(startingGender);
         _updateTimer = new Timer.Timer();
+        _genderEnabled = Settings.genderEnabled;
     }
 
     // Calculate layout positions based on screen dimensions
@@ -67,7 +69,12 @@ class UltiMateView extends WatchUi.View {
         }
 
         _ySection1 = _yOneThird - buffer;
-        _ySection2 = (_yOneThird * 2) + buffer;
+        
+        if (_genderEnabled) {
+            _ySection2 = (_yOneThird * 2) + buffer;
+        } else {
+            _ySection2 = height - (buffer * 1.5);
+        }
         
         _width = dc.getWidth();
         _xCenter = _width / 2;
@@ -80,7 +87,13 @@ class UltiMateView extends WatchUi.View {
         
         var middleSectionHeight = _ySection2 - _ySection1;
         var padding = isSmallScreen ? 0 : middleSectionHeight * 0.1;
-        _yCurrentTimePos = _ySection1;
+        
+        if (_genderEnabled) {
+            _yCurrentTimePos = _ySection1;
+        } else {
+            _yCurrentTimePos = _ySection1 + (middleSectionHeight * 0.05);
+        }
+        
         _yTimerValuePos = _ySection2 - padding - Graphics.getFontHeight(_numberFontSize);
         _yTimerLabelPos = _yTimerValuePos - Graphics.getFontHeight(_labelFontSize);
         
@@ -147,15 +160,17 @@ class UltiMateView extends WatchUi.View {
 
         // ------------------------------------------------------------
 
-        // Gender
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xCenter, _ySection2, _labelFontSize, "Gender", Graphics.TEXT_JUSTIFY_CENTER);
-        // Draw current gender in white (centered)
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xCenter, _yGenderPos, _genderFontSize, _gameModel.getCurrentGender(), Graphics.TEXT_JUSTIFY_CENTER);
-        // Draw next gender in dark grey - centered, slightly right
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_xGenderNextPos, _yGenderPos, _genderFontSize, _gameModel.getNextGender(), Graphics.TEXT_JUSTIFY_CENTER);
+        if (_genderEnabled) {
+            // Gender
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(_xCenter, _ySection2, _labelFontSize, "Gender", Graphics.TEXT_JUSTIFY_CENTER);
+            // Draw current gender in white (centered)
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(_xCenter, _yGenderPos, _genderFontSize, _gameModel.getCurrentGender(), Graphics.TEXT_JUSTIFY_CENTER);
+            // Draw next gender in dark grey - centered, slightly right
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(_xGenderNextPos, _yGenderPos, _genderFontSize, _gameModel.getNextGender(), Graphics.TEXT_JUSTIFY_CENTER);
+        }
     }
 
     // Called when this View is removed from the screen. Save the
@@ -223,11 +238,8 @@ class UltiMateView extends WatchUi.View {
      * Show the confirm exit view when user presses back with no scores.
      */
     function showConfirmExit() as Void {
-        var menu = new WatchUi.Menu();
-        menu.setTitle("Discard and exit?");
-        menu.addItem("Yes", :yes);
-        menu.addItem("No", :no);
-        WatchUi.pushView(menu, new ConfirmExitDelegate(self), WatchUi.SLIDE_UP);
+        var confirmView = new ConfirmExitView(self);
+        WatchUi.pushView(confirmView, new ConfirmExitDelegate(confirmView), WatchUi.SLIDE_UP);
     }
 
     /**

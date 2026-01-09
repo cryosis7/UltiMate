@@ -125,6 +125,16 @@ This application supports a wide range of Garmin devices, including:
 
 See `manifest.xml` for the complete list of supported products.
 
+## Recommended Test Devices
+
+- Forerunner 235 (`fr235`)
+- Forerunner 255 (`fr255`)
+- Forerunner 55 (`fr55`)
+- Fenix 6 Pro (`fenix6pro`)
+- Venu 2 (`venu2`)
+- Venu 2S (`venu2s`)
+- Venu Sq 2 (`venusq2`)
+
 ## Reference
 
 - [Monkey C Command Line Setup](https://developer.garmin.com/connect-iq/reference-guides/monkey-c-command-line-setup/)
