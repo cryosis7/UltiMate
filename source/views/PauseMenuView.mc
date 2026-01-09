@@ -39,11 +39,9 @@ class PauseMenuView extends WatchUi.View {
         _titleY = height * 0.10;
         _timerY = height * 0.30;
         
-        // Calculate menu positioning to center the selected item in lower half
-        // Use consistent spacing between items
-        _menuStartY = height * 0.65;  // Center point for selected item
-        _smallFontHeight = FontConstants.FONT_SMALL_HEIGHT;
-        _mediumFontHeight = FontConstants.FONT_MEDIUM_HEIGHT;
+        _menuStartY = height * 0.65;
+        _smallFontHeight = Graphics.getFontHeight(Graphics.FONT_SMALL);
+        _mediumFontHeight = Graphics.getFontHeight(Graphics.FONT_MEDIUM);
     }
 
     function onShow() {

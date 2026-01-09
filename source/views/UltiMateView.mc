@@ -3,7 +3,6 @@ using Toybox.Graphics;
 using Toybox.System;
 using Toybox.Timer;
 using Toybox.WatchUi;
-using Toybox.ActivityRecording;
 
 /**
  * Main view for the Ulti-Mate application.
@@ -21,7 +20,6 @@ class UltiMateView extends WatchUi.View {
 
     private var _gameModel;
     private var _updateTimer;
-    private var _session;
     
     // Layout variables
     private var _width;
@@ -44,22 +42,10 @@ class UltiMateView extends WatchUi.View {
     private var _yGenderPos;
     private var _xGenderNextPos;
     
-    function initialize() {
+    function initialize(startingGender) {
         View.initialize();
-        _gameModel = new GameModel();
+        _gameModel = new GameModel(startingGender);
         _updateTimer = new Timer.Timer();
-        _session = null;
-        
-        // Start ActivityRecording session
-        if (ActivityRecording has :createSession) {
-            _session = ActivityRecording.createSession({
-                :name => "UltimateFrisbee",
-                :sport => ActivityRecording.SPORT_GENERIC
-            });
-            if (_session != null && _session has :start) {
-                _session.start();
-            }
-        }
     }
 
     // Calculate layout positions based on screen dimensions
@@ -206,23 +192,11 @@ class UltiMateView extends WatchUi.View {
     }
     
     function saveSession() as Void {
-        if (_session != null && _session has :stop) {
-            _session.stop();
-        }
-        if (_session != null && _session has :save) {
-            _session.save();
-        }
-        _session = null;
+        _gameModel.saveSession();
     }
     
     function discardSession() as Void {
-        if (_session != null && _session has :stop) {
-            _session.stop();
-        }
-        if (_session != null && _session has :discard) {
-            _session.discard();
-        }
-        _session = null;
+        _gameModel.discardSession();
     }
     
     function isPaused() {
@@ -249,8 +223,11 @@ class UltiMateView extends WatchUi.View {
      * Show the confirm exit view when user presses back with no scores.
      */
     function showConfirmExit() as Void {
-        var confirmExitView = new ConfirmExitView(self);
-        WatchUi.pushView(confirmExitView, new ConfirmExitDelegate(confirmExitView), WatchUi.SLIDE_UP);
+        var menu = new WatchUi.Menu();
+        menu.setTitle("Discard and exit?");
+        menu.addItem("Yes", :yes);
+        menu.addItem("No", :no);
+        WatchUi.pushView(menu, new ConfirmExitDelegate(self), WatchUi.SLIDE_UP);
     }
 
     /**
@@ -262,16 +239,10 @@ class UltiMateView extends WatchUi.View {
             _updateTimer.stop();
             _updateTimer = null;
         }
-        if (_session != null) {
-            if (_session has :stop) {
-                _session.stop();
-            }
-            if (_session has :discard) {
-                _session.discard();
-            }
-            _session = null;
+        if (_gameModel != null) {
+            _gameModel.cleanup();
+            _gameModel = null;
         }
-        _gameModel = null;
     }
 
 }

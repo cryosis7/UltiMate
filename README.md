@@ -108,7 +108,6 @@ monkeyc --package-app --release -o release/[version]/UltiMate.iq -f monkey.jungl
   - `PauseMenuDelegate.mc`: Input handling for the pause menu.
   - `ConfirmExitView.mc`: Exit confirmation dialog view.
   - `ConfirmExitDelegate.mc`: Input handling for the exit confirmation.
-  - `FontConstants.mc`: Cached font height constants module.
 - `resources/`: Contains layout, string, and image resources.
 - `manifest.xml`: Application manifest defining permissions and supported devices.
 - `monkey.jungle`: Project configuration file.
