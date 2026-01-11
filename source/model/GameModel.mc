@@ -48,18 +48,19 @@ class GameModel {
         _session = null;
         
         if (ActivityRecording has :createSession) {
+            if (Position has :enableLocationEvents) {
+                Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPosition));
+            }
+
             _session = ActivityRecording.createSession({
                 :name => "UltimateFrisbee",
                 :sport => ActivityRecording.SPORT_GENERIC,
                 :subSport => ActivityRecording.SUB_SPORT_GENERIC
             });
+
             if (_session != null && _session has :start) {
                 _session.start();
             }
-        }
-        
-        if (Position has :enableLocationEvents) {
-            Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPosition));
         }
     }
 
