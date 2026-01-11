@@ -38,7 +38,7 @@ class ScrollingMenuView extends WatchUi.View {
             _menuStartY = height * 0.65;
         } else {
             _titleY = height * 0.15;
-            _menuStartY = height * 0.50;
+            _menuStartY = height * 0.55;
         }
     }
 
@@ -74,11 +74,11 @@ class ScrollingMenuView extends WatchUi.View {
         var nextIndex = (_selectedIndex + 1) % menuItemCount;
         
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(_centerX, _menuStartY, Graphics.FONT_MEDIUM, currentItem, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _menuStartY, Graphics.FONT_LARGE, currentItem, Graphics.TEXT_JUSTIFY_CENTER);
         
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(_centerX, _menuStartY - _smallFontHeight, Graphics.FONT_SMALL, _menuItems[prevIndex], Graphics.TEXT_JUSTIFY_CENTER);
-        dc.drawText(_centerX, _menuStartY + _mediumFontHeight, Graphics.FONT_SMALL, _menuItems[nextIndex], Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(_centerX, _menuStartY + _largeFontHeight, Graphics.FONT_SMALL, _menuItems[nextIndex], Graphics.TEXT_JUSTIFY_CENTER);
     }
     
     function getSelectedIndex() {
