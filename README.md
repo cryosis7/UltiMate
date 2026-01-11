@@ -87,9 +87,10 @@ To run the application on your actual Garmin watch, you need to "side-load" the 
 
 Build and package for release:
 ```bash
-mkdir release/[version]/
-monkeyc --package-app --release -o release/[version]/UltiMate.iq -f monkey.jungle -y developer_key.der -O 2pz 
+run ./release.sh
 ```
+
+Publish to https://apps.garmin.com/developer/dashboard
 
 
 **Troubleshooting:**
